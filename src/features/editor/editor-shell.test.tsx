@@ -20,6 +20,9 @@ describe('EditorShell', () => {
 
     expect(html).toContain('empty scene');
     expect(html).toContain('no furniture has been placed yet');
+    expect(html).toContain('no object selected');
+    expect(html).not.toContain('Selected sofa');
+    expect((html.match(/<details/g) ?? []).length).toBe(3);
   });
 
   it('renders loading and error states with accessible text', () => {
@@ -44,5 +47,7 @@ describe('EditorShell', () => {
 
     expect(html).toContain('mobile panel');
     expect(html).toContain('<details');
+    expect(html).toContain('lg:hidden');
+    expect(html).toContain('hidden lg:block');
   });
 });

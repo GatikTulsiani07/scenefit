@@ -3,12 +3,10 @@ import {
   ChevronDown,
   Layers3,
   LoaderCircle,
-  PanelRight,
   RotateCcw,
   Save,
   Share2,
   SquareMousePointer,
-  Trash2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -87,6 +85,17 @@ function EmptySceneState() {
       <p className="mt-2 max-w-md text-sm leading-6 text-slate-400">
         no furniture has been placed yet. add a placeholder product from the catalogue to begin
         composing the room.
+      </p>
+    </div>
+  );
+}
+
+function NoSelectionState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-white/10 bg-slate-900/70 p-5">
+      <p className="text-sm font-semibold text-white">no object selected</p>
+      <p className="mt-2 text-sm leading-6 text-slate-400">
+        the canvas is empty, so the inspector is waiting for a placed object to be selected.
       </p>
     </div>
   );
@@ -273,46 +282,7 @@ function InspectorPanel({ mode }: Readonly<{ mode: EditorShellMode }>) {
         />
       ) : (
         <div className="space-y-4">
-          <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-white">selected sofa</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
-                  seating · AED 3,800
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded-full border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] text-sky-100">
-                  selected
-                </span>
-                <PanelRight className="h-4 w-4 text-sky-300" aria-hidden="true" />
-              </div>
-            </div>
-            <dl className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
-              <div>
-                <dt className="text-xs uppercase tracking-[0.24em] text-slate-500">dimensions</dt>
-                <dd className="mt-1">2.1 × 0.9 × 0.8 m</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.24em] text-slate-500">mode</dt>
-                <dd className="mt-1">move / rotate</dd>
-              </div>
-            </dl>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button type="button" variant="secondary" size="sm">
-                <SquareMousePointer className="h-4 w-4" aria-hidden="true" />
-                move
-              </Button>
-              <Button type="button" variant="secondary" size="sm">
-                <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                rotate
-              </Button>
-              <Button type="button" variant="destructive" size="sm">
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-                delete
-              </Button>
-            </div>
-          </div>
+          <NoSelectionState />
         </div>
       )}
     </SectionCard>
@@ -329,7 +299,7 @@ function MobilePanelToggle({
   children: React.ReactNode;
 }>) {
   return (
-    <details className="group rounded-3xl border border-white/10 bg-slate-950/80 p-4 shadow-xl shadow-slate-950/30 backdrop-blur md:hidden">
+    <details className="group rounded-3xl border border-white/10 bg-slate-950/80 p-4 shadow-xl shadow-slate-950/30 backdrop-blur lg:hidden">
       <summary className="cursor-pointer list-none rounded-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -391,17 +361,17 @@ export function EditorShell({
         ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)_minmax(16rem,22rem)]">
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <CataloguePanel mode={mode} />
           </div>
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <CanvasPanel mode={mode} />
           </div>
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <InspectorPanel mode={mode} />
           </div>
 
-          <div className="space-y-4 md:hidden">
+          <div className="space-y-4 lg:hidden">
             <MobilePanelToggle
               title="catalogue panel"
               description="browse placeholder items and add them to the room."

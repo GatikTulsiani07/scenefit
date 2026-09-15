@@ -1,5 +1,4 @@
 import React from 'react';
-
 import { homePageContent } from '@/lib/site';
 
 export default function HomePage() {
@@ -14,7 +13,9 @@ export default function HomePage() {
             <h1 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
               {homePageContent.title}
             </h1>
-            <p className="text-xl text-slate-300 md:text-2xl">{homePageContent.tagline}</p>
+            <p className="text-xl text-slate-300 md:text-2xl">
+              {homePageContent.tagline}
+            </p>
           </div>
           <p className="max-w-xl text-base leading-7 text-slate-400 md:text-lg">
             {homePageContent.description}
