@@ -8,7 +8,6 @@ import {
   RotateCcw,
   Save,
   Share2,
-  SquareMousePointer,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import {
 import { siteName } from '@/lib/site';
 import { createEditorStore, type EditorStoreState } from '@/stores/editor-store';
 import type { PlacedAsset } from '@/lib/validation/scene-data';
+import { RoomCanvasBoundary } from './room-canvas';
 
 type EditorShellMode = 'ready' | 'loading' | 'error';
 
@@ -186,19 +186,9 @@ function CanvasPanel({
     <SectionCard
       eyebrow="canvas"
       title="central 3d canvas"
-      description="placeholder for the room view, with load states and a clear empty-scene prompt."
+      description="interactive static room preview with orbit, pan, zoom, and reset-camera controls."
     >
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3">
-          <div className="flex items-center gap-2 text-sm text-slate-200">
-            <SquareMousePointer className="h-4 w-4 text-sky-300" aria-hidden="true" />
-            <span>orbit, pan, and zoom controls for the desktop editor</span>
-          </div>
-          <Button type="button" variant="outline" size="sm">
-            reset camera
-          </Button>
-        </div>
-
         {mode === 'loading' ? (
           <StatusCard
             tone="loading"
@@ -212,14 +202,19 @@ function CanvasPanel({
             description="the 3d canvas could not be prepared. retry after the room model is available."
             actionLabel="retry canvas"
           />
-        ) : placedAssets.length === 0 ? (
-          <EmptySceneState />
         ) : (
-          <SceneSummary
-            placedAssets={placedAssets}
-            selectedInstanceId={selectedInstanceId}
-            onSelectInstance={onSelectInstance}
-          />
+          <>
+            <RoomCanvasBoundary />
+            {placedAssets.length === 0 ? (
+              <EmptySceneState />
+            ) : (
+              <SceneSummary
+                placedAssets={placedAssets}
+                selectedInstanceId={selectedInstanceId}
+                onSelectInstance={onSelectInstance}
+              />
+            )}
+          </>
         )}
       </div>
     </SectionCard>
@@ -412,7 +407,7 @@ export function EditorShell({
             </MobilePanelToggle>
             <MobilePanelToggle
               title="3d canvas"
-              description="view the room placeholder and current selection state."
+              description="view the static room preview and current selection state."
             >
               <CanvasPanel mode={mode} placedAssets={editorState.placedAssets} selectedInstanceId={editorState.selectedInstanceId} onSelectInstance={selectInstance} />
             </MobilePanelToggle>
