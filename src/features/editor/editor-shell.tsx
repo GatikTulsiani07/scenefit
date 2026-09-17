@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { SeededFurnitureCataloguePanel } from '@/features/assets/furniture-catalogue-panel';
+import { getFurnitureCatalogue } from '@/features/assets/furniture-catalogue';
 import { siteName } from '@/lib/site';
 
 type EditorShellMode = 'ready' | 'loading' | 'error';
@@ -19,34 +21,6 @@ export type EditorShellProps = {
   errorMessage?: string;
   retryLabel?: string;
 };
-
-type CatalogueItem = {
-  name: string;
-  category: string;
-  price: string;
-  dimensions: string;
-};
-
-const catalogueItems: CatalogueItem[] = [
-  {
-    name: 'Placeholder sofa',
-    category: 'Seating',
-    price: 'AED 3,800',
-    dimensions: '2.1 × 0.9 × 0.8 m',
-  },
-  {
-    name: 'Placeholder floor lamp',
-    category: 'Lighting',
-    price: 'AED 950',
-    dimensions: '0.4 × 0.4 × 1.5 m',
-  },
-  {
-    name: 'Placeholder side table',
-    category: 'Tables',
-    price: 'AED 1,200',
-    dimensions: '0.6 × 0.6 × 0.5 m',
-  },
-];
 
 const panelLabelClasses = 'text-xs font-semibold uppercase tracking-[0.3em] text-sky-200/70';
 
@@ -135,89 +109,6 @@ function StatusCard({
         </Button>
       ) : null}
     </div>
-  );
-}
-
-function CataloguePanel({ mode }: Readonly<{ mode: EditorShellMode }>) {
-  return (
-    <SectionCard
-      eyebrow="catalogue"
-      title="left catalogue panel"
-      description="placeholder controls for browsing products, filtering by category, and adding items into the room."
-    >
-      {mode === 'loading' ? (
-        <StatusCard
-          tone="loading"
-          title="loading catalogue"
-          description="catalogue items will appear here once the product list is ready."
-        />
-      ) : mode === 'error' ? (
-        <StatusCard
-          tone="error"
-          title="catalogue failed to load"
-          description="the catalogue could not be loaded. retry to restore the product list."
-          actionLabel="retry catalogue"
-        />
-      ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2" aria-label="catalogue filters">
-            {['All', 'Seating', 'Lighting', 'Tables'].map((filter) => (
-              <span
-                key={filter}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-200"
-              >
-                {filter}
-              </span>
-            ))}
-          </div>
-
-          <div className="space-y-3">
-            {catalogueItems.map((item) => (
-              <article
-                key={item.name}
-                className="rounded-2xl border border-white/10 bg-slate-900/90 p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="h-12 w-12 shrink-0 rounded-xl border border-white/10 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900"
-                      aria-hidden="true"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-white">{item.name}</p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.24em] text-slate-500">
-                        {item.category}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold text-sky-200">{item.price}</p>
-                </div>
-                <dl className="mt-4 grid gap-3 text-sm text-slate-300 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-xs uppercase tracking-[0.24em] text-slate-500">dimensions</dt>
-                    <dd className="mt-1">{item.dimensions}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs uppercase tracking-[0.24em] text-slate-500">action</dt>
-                    <dd className="mt-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="px-0"
-                        aria-label={`Add ${item.name} to room`}
-                      >
-                        add to room
-                      </Button>
-                    </dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-    </SectionCard>
   );
 }
 
@@ -322,6 +213,8 @@ export function EditorShell({
 }: EditorShellProps) {
   const showLoading = mode === 'loading';
   const showError = mode === 'error';
+  const catalogueState = mode === 'loading' ? 'loading' : mode === 'error' ? 'error' : 'success';
+  const catalogue = getFurnitureCatalogue();
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50">
@@ -362,7 +255,7 @@ export function EditorShell({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)_minmax(16rem,22rem)]">
           <div className="hidden lg:block">
-            <CataloguePanel mode={mode} />
+            <SeededFurnitureCataloguePanel state={catalogueState} catalogue={catalogue} />
           </div>
           <div className="hidden lg:block">
             <CanvasPanel mode={mode} />
@@ -374,9 +267,9 @@ export function EditorShell({
           <div className="space-y-4 lg:hidden">
             <MobilePanelToggle
               title="catalogue panel"
-              description="browse placeholder items and add them to the room."
+              description="browse products and filter by category."
             >
-              <CataloguePanel mode={mode} />
+              <SeededFurnitureCataloguePanel state={catalogueState} catalogue={catalogue} />
             </MobilePanelToggle>
             <MobilePanelToggle
               title="3d canvas"

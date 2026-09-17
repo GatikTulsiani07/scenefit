@@ -8,7 +8,7 @@ describe('EditorShell', () => {
   it('renders the three editor regions on desktop', () => {
     const html = renderToStaticMarkup(<EditorShell />);
 
-    expect(html).toContain('left catalogue panel');
+    expect(html).toContain('Furniture catalogue');
     expect(html).toContain('central 3d canvas');
     expect(html).toContain('right selected-object inspector');
     expect(html).toContain('save');
@@ -30,7 +30,7 @@ describe('EditorShell', () => {
     const errorHtml = renderToStaticMarkup(<EditorShell mode="error" />);
 
     expect(loadingHtml).toContain('loading editor shell');
-    expect(loadingHtml).toContain('loading catalogue');
+    expect(loadingHtml).toContain('Loading catalogue');
     expect(errorHtml).toContain('editor shell error');
     expect(errorHtml).toContain('retry load');
   });
