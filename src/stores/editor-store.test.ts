@@ -14,7 +14,7 @@ const validScene: { version: 1; roomId: string; placedAssets: PlacedAsset[] } = 
   placedAssets: [
     {
       instanceId: 'instance-1',
-      assetId: 'sofa',
+      assetId: 'sofa-luma-01',
       position: [1, 0, -2] as const,
       rotation: [0, Math.PI / 2, 0] as const,
     },
@@ -150,42 +150,85 @@ describe('editor store', () => {
 
     const hydrated = store.getState().hydrateScene(validScene);
 
-    expect(hydrated).toBe(true);
+    expect(hydrated).toEqual({ success: true, data: validScene });
     expect(store.getState().projectId).toBe('project-1');
     expect(store.getState().projectName).toBe('Draft design');
     expect(store.getState().roomId).toBe('living-room-v1');
     expect(store.getState().placedAssets).toEqual(validScene.placedAssets);
     expect(store.getState().selectedInstanceId).toBeNull();
+    expect(store.getState().interactionMode).toBe('select');
     expect(store.getState().isDirty).toBe(false);
     expect(store.getState().saveStatus).toBe('saved');
     expect(store.getState().assetLoadingStatus).toBe('ready');
     expect(store.getState().editorError).toBeNull();
   });
 
-  it('rejects invalid hydration without changing the scene', () => {
+  it('serializes the current persistable scene without transient state', () => {
+    const store = createEditorStore({
+      roomId: 'living-room-v1',
+      placedAssets: validScene.placedAssets,
+      selectedInstanceId: 'instance-1',
+      interactionMode: 'rotate',
+      isDirty: true,
+      saveStatus: 'saving',
+      assetLoadingStatus: 'loading',
+      editorError: { code: 'unknown', message: 'stale error' },
+    });
+
+    expect(store.getState().serializeScene()).toEqual({ success: true, data: validScene });
+  });
+
+  it('rejects invalid hydration atomically with a structured result', () => {
     const store = createEditorStore({
       roomId: 'placeholder-room',
       placedAssets: [{ ...validScene.placedAssets[0], instanceId: 'draft-instance' }],
       selectedInstanceId: 'draft-instance',
       isDirty: true,
+      interactionMode: 'move',
+      saveStatus: 'error',
+      assetLoadingStatus: 'error',
+      editorError: { code: 'unknown', message: 'existing error' },
     });
+    const previousState = store.getState();
 
     const hydrated = store.getState().hydrateScene({
       ...validScene,
       roomId: ' ',
     });
 
-    expect(hydrated).toBe(false);
-    expect(store.getState().roomId).toBe('placeholder-room');
-    expect(store.getState().placedAssets).toEqual([
-      { ...validScene.placedAssets[0], instanceId: 'draft-instance' },
-    ]);
-    expect(store.getState().selectedInstanceId).toBe('draft-instance');
-    expect(store.getState().isDirty).toBe(true);
-    expect(store.getState().editorError).toEqual({
-      code: 'validation_failed',
-      message: 'Scene data could not be loaded.',
-    });
+    expect(hydrated).toMatchObject({ success: false, error: { code: 'validation_failed' } });
+    expect(store.getState()).toEqual(previousState);
+  });
+
+  it('preserves the complete existing state for every hydration failure category', () => {
+    const invalidScenes: unknown[] = [
+      { ...validScene, version: 2 },
+      { ...validScene, placedAssets: [{ ...validScene.placedAssets[0], assetId: 'unknown-asset' }] },
+      { ...validScene, placedAssets: [{ ...validScene.placedAssets[0], position: [0, 0] }] },
+      { ...validScene, placedAssets: [{ ...validScene.placedAssets[0], rotation: [0, Number.NaN, 0] }] },
+      { ...validScene, placedAssets: [validScene.placedAssets[0], validScene.placedAssets[0]] },
+    ];
+
+    for (const invalidScene of invalidScenes) {
+      const store = createEditorStore({
+        projectId: 'project-1',
+        projectName: 'Unsaved room',
+        roomId: 'draft-room',
+        placedAssets: [{ ...validScene.placedAssets[0], instanceId: 'draft-instance' }],
+        selectedInstanceId: 'draft-instance',
+        interactionMode: 'rotate',
+        isDirty: true,
+        saveStatus: 'saving',
+        assetLoadingStatus: 'loading',
+        editorError: { code: 'unknown', message: 'keep this error' },
+      });
+      const previousState = store.getState();
+
+      const result = store.getState().hydrateScene(invalidScene);
+
+      expect(result.success).toBe(false);
+      expect(store.getState()).toEqual(previousState);
+    }
   });
 
   it('marks the project as saved and clears the dirty state', () => {
