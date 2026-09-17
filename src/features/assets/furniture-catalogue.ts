@@ -6,9 +6,17 @@ const applicationRelativePathSchema = z
   .string()
   .trim()
   .min(1)
-  .regex(/^\/(?!\/)(?:[^\s?#]+)(?:\?[^\s#]+)?(?:#[^\s]+)?$/, {
+  .regex(/^\/(?!\/)[^\s?#]+$/, {
     message: 'must be an application-relative path',
   });
+
+const thumbnailPathSchema = applicationRelativePathSchema.regex(/\.(?:png|jpe?g|webp|avif)$/i, {
+  message: 'thumbnailUrl must use a supported image format',
+});
+
+const modelPathSchema = applicationRelativePathSchema.regex(/\.(?:glb|gltf)$/i, {
+  message: 'modelUrl must use a supported 3D model format',
+});
 
 const furnitureDimensionsSchema = z
   .object({
@@ -18,12 +26,12 @@ const furnitureDimensionsSchema = z
   })
   .strict();
 
-const furnitureMetadataValueSchema = z.union([
-  z.string(),
-  z.number(),
-  z.boolean(),
-  z.null(),
-]);
+const furnitureMetadataSchema = z
+  .object({
+    isHeroItem: z.boolean().optional(),
+    fabric: nonEmptyTextSchema.optional(),
+  })
+  .strict();
 
 export const furnitureAssetSchema = z
   .object({
@@ -33,10 +41,10 @@ export const furnitureAssetSchema = z
     sku: nonEmptyTextSchema,
     description: nonEmptyTextSchema.optional(),
     priceAed: z.number().int().nonnegative(),
-    thumbnailUrl: applicationRelativePathSchema,
-    modelUrl: applicationRelativePathSchema,
+    thumbnailUrl: thumbnailPathSchema,
+    modelUrl: modelPathSchema,
     dimensions: furnitureDimensionsSchema,
-    metadata: z.record(z.string(), furnitureMetadataValueSchema).optional(),
+    metadata: furnitureMetadataSchema.optional(),
   })
   .strict();
 
@@ -73,6 +81,37 @@ export type FurnitureDimensions = z.infer<typeof furnitureDimensionsSchema>;
 export type FurnitureAsset = z.infer<typeof furnitureAssetSchema>;
 export type FurnitureCatalogue = z.infer<typeof furnitureCatalogueSchema>;
 
+function cloneFurnitureAsset(asset: FurnitureAsset): FurnitureAsset {
+  return {
+    ...asset,
+    dimensions: { ...asset.dimensions },
+    metadata: asset.metadata ? { ...asset.metadata } : undefined,
+  };
+}
+
+function cloneFurnitureCatalogue(catalogue: ReadonlyArray<FurnitureAsset>): FurnitureAsset[] {
+  return catalogue.map((asset) => cloneFurnitureAsset(asset));
+}
+
+function deepFreezeFurnitureAsset(asset: FurnitureAsset): FurnitureAsset {
+  if (asset.metadata) {
+    Object.freeze(asset.metadata);
+  }
+
+  Object.freeze(asset.dimensions);
+  return Object.freeze(asset);
+}
+
+function deepFreezeFurnitureCatalogue(
+  catalogue: FurnitureAsset[],
+): ReadonlyArray<FurnitureAsset> {
+  for (const asset of catalogue) {
+    deepFreezeFurnitureAsset(asset);
+  }
+
+  return Object.freeze(catalogue);
+}
+
 const seededFurnitureCatalogue = [
   {
     assetId: 'sofa-luma-01',
@@ -89,7 +128,6 @@ const seededFurnitureCatalogue = [
       depthMetres: 0.92,
     },
     metadata: {
-      isHeroItem: true,
       fabric: 'boucle',
     },
   },
@@ -230,28 +268,34 @@ const seededFurnitureCatalogue = [
   },
 ] as const;
 
-export const furnitureCatalogue = furnitureCatalogueSchema.parse(seededFurnitureCatalogue);
+const frozenFurnitureCatalogue = deepFreezeFurnitureCatalogue(
+  furnitureCatalogueSchema.parse(seededFurnitureCatalogue),
+);
 
-export function getFurnitureCatalogue(): FurnitureCatalogue {
-  return [...furnitureCatalogue];
+export const furnitureCatalogue = frozenFurnitureCatalogue;
+
+export function getFurnitureCatalogue(): FurnitureAsset[] {
+  return cloneFurnitureCatalogue(frozenFurnitureCatalogue);
 }
 
 export function findFurnitureAssetById(
   assetId: string,
-  catalogue: FurnitureCatalogue = furnitureCatalogue,
+  catalogue: ReadonlyArray<FurnitureAsset> = frozenFurnitureCatalogue,
 ): FurnitureAsset | undefined {
-  return catalogue.find((asset) => asset.assetId === assetId);
+  const foundAsset = catalogue.find((asset) => asset.assetId === assetId);
+
+  return foundAsset ? cloneFurnitureAsset(foundAsset) : undefined;
 }
 
 export function filterFurnitureAssetsByCategory(
   category: string,
-  catalogue: FurnitureCatalogue = furnitureCatalogue,
+  catalogue: ReadonlyArray<FurnitureAsset> = frozenFurnitureCatalogue,
 ): FurnitureAsset[] {
-  return catalogue.filter((asset) => asset.category === category);
+  return catalogue.filter((asset) => asset.category === category).map((asset) => cloneFurnitureAsset(asset));
 }
 
 export function getAvailableFurnitureCategories(
-  catalogue: FurnitureCatalogue = furnitureCatalogue,
+  catalogue: ReadonlyArray<FurnitureAsset> = frozenFurnitureCatalogue,
 ): string[] {
   return Array.from(new Set(catalogue.map((asset) => asset.category)));
 }

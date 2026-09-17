@@ -9,7 +9,6 @@ import {
   getAvailableFurnitureCategories,
   getFurnitureCatalogue,
   type FurnitureAsset,
-  type FurnitureCatalogue,
 } from './furniture-catalogue';
 
 const validAsset: FurnitureAsset = {
@@ -27,13 +26,11 @@ const validAsset: FurnitureAsset = {
     depthMetres: 0.95,
   },
   metadata: {
-    finish: 'linen',
-    featured: true,
-    note: null,
+    fabric: 'linen',
   },
 };
 
-const validCatalogue: FurnitureCatalogue = furnitureCatalogue;
+const validCatalogue = furnitureCatalogue;
 
 describe('furniture asset contract', () => {
   it('accepts a valid furniture asset', () => {
@@ -55,8 +52,20 @@ describe('furniture asset contract', () => {
     for (const invalidAsset of [
       { ...validAsset, thumbnailUrl: 'assets/demo-sofa.png' },
       { ...validAsset, thumbnailUrl: 'https://example.com/demo-sofa.png' },
+      { ...validAsset, thumbnailUrl: '/assets/thumbnails/demo-sofa.svg' },
       { ...validAsset, modelUrl: 'demo-sofa.glb' },
       { ...validAsset, modelUrl: 'https://example.com/demo-sofa.glb' },
+      { ...validAsset, modelUrl: '/assets/models/demo-sofa.obj' },
+    ]) {
+      expect(furnitureAssetSchema.safeParse(invalidAsset).success).toBe(false);
+    }
+  });
+
+  it('rejects unsupported metadata keys and invalid metadata values', () => {
+    for (const invalidAsset of [
+      { ...validAsset, metadata: { finish: 'linen' } },
+      { ...validAsset, metadata: { isHeroItem: 'yes' } },
+      { ...validAsset, metadata: { fabric: '' } },
     ]) {
       expect(furnitureAssetSchema.safeParse(invalidAsset).success).toBe(false);
     }
@@ -132,5 +141,39 @@ describe('furniture asset contract', () => {
       'Textiles',
       'Decor',
     ]);
+  });
+
+  it('returns defensive copies so callers cannot mutate the canonical catalogue', () => {
+    const firstSnapshot = getFurnitureCatalogue();
+
+    firstSnapshot[0].name = 'Tampered sofa';
+    firstSnapshot[0].dimensions.widthMetres = 99;
+    firstSnapshot[0].metadata = { fabric: 'tampered' };
+
+    const secondSnapshot = getFurnitureCatalogue();
+
+    expect(secondSnapshot[0].name).toBe('Luma three-seat sofa');
+    expect(secondSnapshot[0].dimensions.widthMetres).toBe(2.1);
+    expect(secondSnapshot[0].metadata).toEqual({ fabric: 'boucle' });
+  });
+
+  it('returns defensive copies from lookup and category helpers as well', () => {
+    const found = findFurnitureAssetById('sofa-luma-01');
+    expect(found).toBeDefined();
+
+    if (!found) {
+      return;
+    }
+
+    found.name = 'Changed by consumer';
+    found.dimensions.heightMetres = 42;
+    found.metadata = { fabric: 'changed' };
+
+    expect(findFurnitureAssetById('sofa-luma-01')).toEqual(furnitureCatalogue[0]);
+
+    const seating = filterFurnitureAssetsByCategory('Seating');
+    seating[0].name = 'Changed category result';
+
+    expect(filterFurnitureAssetsByCategory('Seating')[0]).toEqual(furnitureCatalogue[0]);
   });
 });
