@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import {
   ChevronDown,
@@ -11,8 +13,13 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { SeededFurnitureCataloguePanel } from '@/features/assets/furniture-catalogue-panel';
-import { getFurnitureCatalogue } from '@/features/assets/furniture-catalogue';
+import {
+  findFurnitureAssetById,
+  getFurnitureCatalogue,
+} from '@/features/assets/furniture-catalogue';
 import { siteName } from '@/lib/site';
+import { createEditorStore, type EditorStoreState } from '@/stores/editor-store';
+import type { PlacedAsset } from '@/lib/validation/scene-data';
 
 type EditorShellMode = 'ready' | 'loading' | 'error';
 
@@ -20,6 +27,7 @@ export type EditorShellProps = {
   mode?: EditorShellMode;
   errorMessage?: string;
   retryLabel?: string;
+  editorStore?: ReturnType<typeof createEditorStore>;
 };
 
 const panelLabelClasses = 'text-xs font-semibold uppercase tracking-[0.3em] text-sky-200/70';
@@ -75,6 +83,57 @@ function NoSelectionState() {
   );
 }
 
+function formatVector(vector: PlacedAsset['position']) {
+  return `(${vector.map((value) => value.toFixed(2)).join(', ')})`;
+}
+
+function SceneSummary({
+  placedAssets,
+  selectedInstanceId,
+  onSelectInstance,
+}: Readonly<{
+  placedAssets: ReadonlyArray<PlacedAsset>;
+  selectedInstanceId: string | null;
+  onSelectInstance: (instanceId: string) => void;
+}>) {
+  return (
+    <div className="rounded-2xl border border-sky-400/25 bg-slate-900/70 p-5" aria-live="polite">
+      <h3 className="text-base font-semibold text-white">
+        {placedAssets.length} {placedAssets.length === 1 ? 'item' : 'items'} in the scene
+      </h3>
+      <ul className="mt-4 space-y-3">
+        {placedAssets.map((placedAsset) => {
+          const asset = findFurnitureAssetById(placedAsset.assetId);
+          const isSelected = placedAsset.instanceId === selectedInstanceId;
+
+          return (
+            <li
+              key={placedAsset.instanceId}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-slate-950/60 p-3"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">{asset?.name ?? 'Unknown product'}</p>
+                <p className="mt-1 break-all text-xs text-slate-400">Instance: {placedAsset.instanceId}</p>
+                {isSelected ? <p className="mt-1 text-xs font-semibold text-sky-200">Selected</p> : null}
+              </div>
+              <Button
+                type="button"
+                variant={isSelected ? 'secondary' : 'outline'}
+                size="sm"
+                aria-pressed={isSelected}
+                aria-label={`Select ${asset?.name ?? 'unknown product'} instance ${placedAsset.instanceId}`}
+                onClick={() => onSelectInstance(placedAsset.instanceId)}
+              >
+                Select instance
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function StatusCard({
   tone,
   title,
@@ -112,7 +171,17 @@ function StatusCard({
   );
 }
 
-function CanvasPanel({ mode }: Readonly<{ mode: EditorShellMode }>) {
+function CanvasPanel({
+  mode,
+  placedAssets,
+  selectedInstanceId,
+  onSelectInstance,
+}: Readonly<{
+  mode: EditorShellMode;
+  placedAssets: ReadonlyArray<PlacedAsset>;
+  selectedInstanceId: string | null;
+  onSelectInstance: (instanceId: string) => void;
+}>) {
   return (
     <SectionCard
       eyebrow="canvas"
@@ -143,15 +212,34 @@ function CanvasPanel({ mode }: Readonly<{ mode: EditorShellMode }>) {
             description="the 3d canvas could not be prepared. retry after the room model is available."
             actionLabel="retry canvas"
           />
-        ) : (
+        ) : placedAssets.length === 0 ? (
           <EmptySceneState />
+        ) : (
+          <SceneSummary
+            placedAssets={placedAssets}
+            selectedInstanceId={selectedInstanceId}
+            onSelectInstance={onSelectInstance}
+          />
         )}
       </div>
     </SectionCard>
   );
 }
 
-function InspectorPanel({ mode }: Readonly<{ mode: EditorShellMode }>) {
+function InspectorPanel({
+  mode,
+  selectedInstanceId,
+  placedAssets,
+}: Readonly<{
+  mode: EditorShellMode;
+  selectedInstanceId: string | null;
+  placedAssets: ReadonlyArray<PlacedAsset>;
+}>) {
+  const selectedAsset = selectedInstanceId
+    ? placedAssets.find((placedAsset) => placedAsset.instanceId === selectedInstanceId)
+    : undefined;
+  const product = selectedAsset ? findFurnitureAssetById(selectedAsset.assetId) : undefined;
+
   return (
     <SectionCard
       eyebrow="inspector"
@@ -173,7 +261,40 @@ function InspectorPanel({ mode }: Readonly<{ mode: EditorShellMode }>) {
         />
       ) : (
         <div className="space-y-4">
-          <NoSelectionState />
+          {!selectedAsset || !product ? (
+            <NoSelectionState />
+          ) : (
+            <div className="rounded-2xl border border-sky-300/50 bg-sky-400/10 p-5" aria-live="polite">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">Selected instance</p>
+              <h3 className="mt-2 text-lg font-semibold text-white">{product.name}</h3>
+              <dl className="mt-4 space-y-3 text-sm text-slate-300">
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Category</dt>
+                  <dd className="mt-1">{product.category}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Price</dt>
+                  <dd className="mt-1">AED {new Intl.NumberFormat('en-AE').format(product.priceAed)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Dimensions</dt>
+                  <dd className="mt-1">W {product.dimensions.widthMetres.toFixed(2)} m × H {product.dimensions.heightMetres.toFixed(2)} m × D {product.dimensions.depthMetres.toFixed(2)} m</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Instance ID</dt>
+                  <dd className="mt-1 break-all">{selectedAsset.instanceId}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Position</dt>
+                  <dd className="mt-1">{formatVector(selectedAsset.position)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.2em] text-slate-400">Y-axis rotation</dt>
+                  <dd className="mt-1">{selectedAsset.rotation[1].toFixed(2)} rad</dd>
+                </div>
+              </dl>
+            </div>
+          )}
         </div>
       )}
     </SectionCard>
@@ -210,11 +331,29 @@ export function EditorShell({
   mode = 'ready',
   errorMessage = 'the editor shell hit a recoverable error while loading placeholder data.',
   retryLabel = 'retry load',
+  editorStore,
 }: EditorShellProps) {
   const showLoading = mode === 'loading';
   const showError = mode === 'error';
   const catalogueState = mode === 'loading' ? 'loading' : mode === 'error' ? 'error' : 'success';
   const catalogue = getFurnitureCatalogue();
+  const storeRef = React.useRef<ReturnType<typeof createEditorStore> | null>(null);
+
+  if (!storeRef.current) {
+    storeRef.current = editorStore ?? createEditorStore({
+      roomId: 'living-room-v1',
+      assets: catalogue.map((asset) => ({ id: asset.assetId, name: asset.name, category: asset.category })),
+    });
+  }
+
+  const store = storeRef.current as ReturnType<typeof createEditorStore>;
+  const editorState = React.useSyncExternalStore<EditorStoreState>(
+    store.subscribe,
+    store.getState,
+    store.getState,
+  );
+  const addAsset = (assetId: string) => store.getState().addAsset(assetId);
+  const selectInstance = (instanceId: string) => store.getState().selectInstance(instanceId);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50">
@@ -255,13 +394,13 @@ export function EditorShell({
 
         <div className="grid gap-4 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)_minmax(16rem,22rem)]">
           <div className="hidden lg:block">
-            <SeededFurnitureCataloguePanel state={catalogueState} catalogue={catalogue} />
+            <SeededFurnitureCataloguePanel state={catalogueState} catalogue={catalogue} onAddToRoom={addAsset} />
           </div>
           <div className="hidden lg:block">
-            <CanvasPanel mode={mode} />
+            <CanvasPanel mode={mode} placedAssets={editorState.placedAssets} selectedInstanceId={editorState.selectedInstanceId} onSelectInstance={selectInstance} />
           </div>
           <div className="hidden lg:block">
-            <InspectorPanel mode={mode} />
+            <InspectorPanel mode={mode} selectedInstanceId={editorState.selectedInstanceId} placedAssets={editorState.placedAssets} />
           </div>
 
           <div className="space-y-4 lg:hidden">
@@ -269,19 +408,19 @@ export function EditorShell({
               title="catalogue panel"
               description="browse products and filter by category."
             >
-              <SeededFurnitureCataloguePanel state={catalogueState} catalogue={catalogue} />
+              <SeededFurnitureCataloguePanel state={catalogueState} catalogue={catalogue} onAddToRoom={addAsset} />
             </MobilePanelToggle>
             <MobilePanelToggle
               title="3d canvas"
               description="view the room placeholder and current selection state."
             >
-              <CanvasPanel mode={mode} />
+              <CanvasPanel mode={mode} placedAssets={editorState.placedAssets} selectedInstanceId={editorState.selectedInstanceId} onSelectInstance={selectInstance} />
             </MobilePanelToggle>
             <MobilePanelToggle
               title="selected-object inspector"
               description="see object details and quick actions on mobile."
             >
-              <InspectorPanel mode={mode} />
+              <InspectorPanel mode={mode} selectedInstanceId={editorState.selectedInstanceId} placedAssets={editorState.placedAssets} />
             </MobilePanelToggle>
           </div>
         </div>
