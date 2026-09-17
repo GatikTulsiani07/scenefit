@@ -1,9 +1,13 @@
 import { createStore } from 'zustand/vanilla';
 
 import {
-  sceneDataV1Schema,
+  prepareSceneHydration,
+  serializeSceneData,
+  type SceneHydrationResult,
+  type SceneSerializationResult,
+} from '@/features/editor/scene-serialization';
+import {
   type PlacedAsset,
-  type SceneDataV1,
   type Vector3,
 } from '@/lib/validation/scene-data';
 
@@ -40,7 +44,8 @@ export type EditorStoreState = {
   updateRotation: (instanceId: string, rotation: Vector3) => void;
   deleteInstance: (instanceId: string) => void;
   clearScene: () => void;
-  hydrateScene: (scene: unknown) => boolean;
+  serializeScene: () => SceneSerializationResult;
+  hydrateScene: (scene: unknown) => SceneHydrationResult;
   markSaved: () => void;
 };
 
@@ -92,10 +97,6 @@ function mergeRotation(previous: Vector3, rotation: Vector3): Vector3 {
   return [previous[0], rotation[1], previous[2]];
 }
 
-function buildEditorError(message: string): EditorErrorState {
-  return { code: 'validation_failed', message };
-}
-
 function initialState(options: CreateEditorStoreOptions) {
   return {
     projectId: options.projectId ?? '',
@@ -119,7 +120,7 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}) {
       globalThis.crypto?.randomUUID?.() ??
       `instance-${Math.random().toString(36).slice(2, 10)}`);
 
-  return createStore<EditorStoreState>((set) => ({
+  return createStore<EditorStoreState>((set, get) => ({
     ...initialState(options),
     addAsset: (assetId, placementOptions = {}) => {
       let createdAsset: PlacedAsset | undefined;
@@ -211,30 +212,29 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}) {
         editorError: null,
       });
     },
+    serializeScene: () => serializeSceneData({
+      roomId: get().roomId,
+      placedAssets: get().placedAssets,
+    }),
     hydrateScene: (scene) => {
-      const parsedScene = sceneDataV1Schema.safeParse(scene);
+      const result = prepareSceneHydration(scene);
 
-      if (!parsedScene.success) {
-        set({
-          editorError: buildEditorError('Scene data could not be loaded.'),
-        });
-
-        return false;
+      if (!result.success) {
+        return result;
       }
 
-      const hydratedScene: SceneDataV1 = parsedScene.data;
-
       set({
-        roomId: hydratedScene.roomId,
-        placedAssets: hydratedScene.placedAssets,
+        roomId: result.data.roomId,
+        placedAssets: result.data.placedAssets,
         selectedInstanceId: null,
+        interactionMode: 'select',
         isDirty: false,
         saveStatus: 'saved',
         assetLoadingStatus: 'ready',
         editorError: null,
       });
 
-      return true;
+      return result;
     },
     markSaved: () => {
       set({
