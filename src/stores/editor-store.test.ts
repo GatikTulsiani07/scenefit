@@ -39,6 +39,36 @@ describe('editor store', () => {
     expect(store.getState().assets).toEqual(sampleCatalog);
   });
 
+  it('adds different and repeated products with deterministic unique instance IDs', () => {
+    const generatedIds = ['instance-sofa-1', 'instance-lamp-1', 'instance-sofa-2'];
+    const store = createEditorStore({
+      generateInstanceId: () => generatedIds.shift() ?? '',
+      assets: sampleCatalog,
+    });
+
+    const firstSofa = store.getState().addAsset('sofa');
+    const lamp = store.getState().addAsset('lamp');
+    const secondSofa = store.getState().addAsset('sofa');
+
+    expect(store.getState().placedAssets).toEqual([firstSofa, lamp, secondSofa]);
+    expect(new Set(store.getState().placedAssets.map((asset) => asset.instanceId)).size).toBe(3);
+    expect(store.getState().placedAssets.map((asset) => asset.assetId)).toEqual(['sofa', 'lamp', 'sofa']);
+    expect(store.getState().selectedInstanceId).toBe('instance-sofa-2');
+    expect(store.getState().isDirty).toBe(true);
+  });
+
+  it('uses a deterministic unused fallback ID when the generator repeats an existing ID', () => {
+    const store = createEditorStore({ generateInstanceId: () => 'duplicate-id' });
+
+    const first = store.getState().addAsset('sofa');
+    const second = store.getState().addAsset('sofa');
+
+    expect(first.instanceId).toBe('duplicate-id');
+    expect(second.instanceId).toBe('instance-1');
+    expect(second.position).toEqual([0, 0, 0]);
+    expect(second.rotation).toEqual([0, 0, 0]);
+  });
+
   it('selects an instance without mutating the scene', () => {
     const store = createEditorStore({ placedAssets: [validScene.placedAssets[0]] });
 

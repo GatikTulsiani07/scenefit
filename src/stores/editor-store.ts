@@ -68,9 +68,20 @@ type CreateEditorStoreOptions = {
 const defaultPosition: Vector3 = [0, 0, 0];
 const defaultRotation: Vector3 = [0, 0, 0];
 
-function createInstanceId(generateInstanceId: () => string) {
+function createInstanceId(generateInstanceId: () => string, placedAssets: ReadonlyArray<PlacedAsset>) {
   const candidate = generateInstanceId().trim();
-  return candidate.length > 0 ? candidate : `instance-${Date.now()}`;
+  const existingInstanceIds = new Set(placedAssets.map((placedAsset) => placedAsset.instanceId));
+
+  if (candidate.length > 0 && !existingInstanceIds.has(candidate)) {
+    return candidate;
+  }
+
+  let suffix = 1;
+  while (existingInstanceIds.has(`instance-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `instance-${suffix}`;
 }
 
 function mergePosition(previous: Vector3, position: Vector3): Vector3 {
@@ -111,22 +122,29 @@ export function createEditorStore(options: CreateEditorStoreOptions = {}) {
   return createStore<EditorStoreState>((set) => ({
     ...initialState(options),
     addAsset: (assetId, placementOptions = {}) => {
-      const placedAsset: PlacedAsset = {
-        instanceId: placementOptions.instanceId ?? createInstanceId(generateInstanceId),
-        assetId,
-        position: placementOptions.position ?? defaultPosition,
-        rotation: placementOptions.rotation ?? defaultRotation,
-      };
+      let createdAsset: PlacedAsset | undefined;
 
-      set((state) => ({
-        placedAssets: [...state.placedAssets, placedAsset],
-        selectedInstanceId: placedAsset.instanceId,
-        interactionMode: 'select',
-        isDirty: true,
-        editorError: null,
-      }));
+      set((state) => {
+        const placedAsset: PlacedAsset = {
+          instanceId:
+            placementOptions.instanceId ?? createInstanceId(generateInstanceId, state.placedAssets),
+          assetId,
+          position: placementOptions.position ?? defaultPosition,
+          rotation: placementOptions.rotation ?? defaultRotation,
+        };
 
-      return placedAsset;
+        createdAsset = placedAsset;
+
+        return {
+          placedAssets: [...state.placedAssets, placedAsset],
+          selectedInstanceId: placedAsset.instanceId,
+          interactionMode: 'select',
+          isDirty: true,
+          editorError: null,
+        };
+      });
+
+      return createdAsset as PlacedAsset;
     },
     selectInstance: (instanceId) => {
       set({ selectedInstanceId: instanceId });

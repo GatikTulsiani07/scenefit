@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { furnitureCatalogue, getAvailableFurnitureCategories } from './furniture-catalogue';
 import {
+  CatalogueAddToRoomButton,
   CatalogueRetryButton,
   formatAedPrice,
   formatDimensions,
@@ -14,7 +15,12 @@ import {
 
 function renderPanel(props: Partial<React.ComponentProps<typeof FurnitureCataloguePanel>> = {}) {
   return renderToStaticMarkup(
-    <FurnitureCataloguePanel catalogue={furnitureCatalogue} {...props} onRetry={props.onRetry ?? (() => undefined)} />,
+    <FurnitureCataloguePanel
+      catalogue={furnitureCatalogue}
+      {...props}
+      onRetry={props.onRetry ?? (() => undefined)}
+      onAddToRoom={props.onAddToRoom ?? (() => undefined)}
+    />,
   );
 }
 
@@ -81,7 +87,7 @@ describe('FurnitureCataloguePanel', () => {
 
   it('renders an understandable empty filtered result when a category has no matching products', () => {
     const html = renderToStaticMarkup(
-      <FurnitureCataloguePanel state="success" catalogue={[]} onRetry={() => undefined} />,
+      <FurnitureCataloguePanel state="success" catalogue={[]} onRetry={() => undefined} onAddToRoom={() => undefined} />,
     );
 
     expect(html).toContain('0 products shown');
@@ -116,19 +122,30 @@ describe('FurnitureCataloguePanel', () => {
 
   it('renders the empty-catalogue state', () => {
     const html = renderToStaticMarkup(
-      <FurnitureCataloguePanel state="empty" catalogue={[]} onRetry={() => undefined} />,
+      <FurnitureCataloguePanel state="empty" catalogue={[]} onRetry={() => undefined} onAddToRoom={() => undefined} />,
     );
 
     expect(html).toContain('No catalogue products yet');
   });
 
-  it('makes every placement action disabled and explains why it is unavailable', () => {
+  it('renders enabled semantic placement actions for every product', () => {
     const html = renderPanel();
 
     expect((html.match(/Add to room/g) ?? [])).toHaveLength(10);
-    expect((html.match(/disabled=""/g) ?? [])).toHaveLength(10);
-    expect((html.match(/Placement is not available yet/g) ?? [])).toHaveLength(10);
-    expect((html.match(/aria-describedby="placement-unavailable-/g) ?? [])).toHaveLength(10);
+    expect(html).not.toContain('disabled=""');
+    expect(html).toContain('aria-label="Add Luma three-seat sofa to room"');
+  });
+
+  it('calls the supplied store action with the product asset ID', () => {
+    const onAddToRoom = vi.fn();
+    const addButton = CatalogueAddToRoomButton({
+      asset: furnitureCatalogue[0],
+      onAddToRoom,
+    });
+
+    addButton.props.onClick?.({} as React.MouseEvent<HTMLButtonElement>);
+
+    expect(onAddToRoom).toHaveBeenCalledWith('sofa-luma-01');
   });
 
   it('provides an accessible label for the deterministic thumbnail placeholder', () => {

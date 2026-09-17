@@ -16,6 +16,7 @@ export type FurnitureCataloguePanelProps = {
   state?: CatalogueState;
   catalogue?: ReadonlyArray<FurnitureAsset>;
   onRetry: () => void;
+  onAddToRoom: (assetId: string) => void;
 };
 
 const panelLabelClasses = 'text-xs font-semibold uppercase tracking-[0.3em] text-sky-200/70';
@@ -49,6 +50,26 @@ export function CatalogueRetryButton({ onRetry }: Readonly<{ onRetry: () => void
   );
 }
 
+export function CatalogueAddToRoomButton({
+  asset,
+  onAddToRoom,
+}: Readonly<{
+  asset: FurnitureAsset;
+  onAddToRoom: (assetId: string) => void;
+}>) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      aria-label={`Add ${asset.name} to room`}
+      onClick={() => onAddToRoom(asset.assetId)}
+    >
+      Add to room
+    </Button>
+  );
+}
+
 function ProductThumbnail({ asset }: Readonly<{ asset: FurnitureAsset }>) {
   return (
     <div
@@ -62,8 +83,13 @@ function ProductThumbnail({ asset }: Readonly<{ asset: FurnitureAsset }>) {
   );
 }
 
-function ProductCard({ asset }: Readonly<{ asset: FurnitureAsset }>) {
-  const explanationId = `placement-unavailable-${asset.assetId}`;
+function ProductCard({
+  asset,
+  onAddToRoom,
+}: Readonly<{
+  asset: FurnitureAsset;
+  onAddToRoom: (assetId: string) => void;
+}>) {
 
   return (
     <article className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/90 p-4">
@@ -82,12 +108,7 @@ function ProductCard({ asset }: Readonly<{ asset: FurnitureAsset }>) {
         <dd>{formatDimensions(asset.dimensions)}</dd>
       </dl>
       <div className="mt-4">
-        <Button type="button" variant="outline" size="sm" disabled aria-describedby={explanationId}>
-          Add to room
-        </Button>
-        <p id={explanationId} className="mt-2 text-xs leading-5 text-slate-400">
-          Placement is not available yet. It is coming in the next issue.
-        </p>
+        <CatalogueAddToRoomButton asset={asset} onAddToRoom={onAddToRoom} />
       </div>
     </article>
   );
@@ -97,6 +118,7 @@ export function FurnitureCataloguePanel({
   state = 'success',
   catalogue = [],
   onRetry,
+  onAddToRoom,
 }: Readonly<FurnitureCataloguePanelProps>) {
   const [activeCategory, setActiveCategory] = React.useState('All');
   const categories = getAvailableFurnitureCategories(catalogue);
@@ -188,7 +210,7 @@ export function FurnitureCataloguePanel({
           ) : (
             <div className="space-y-3">
               {visibleProducts.map((asset) => (
-                <ProductCard key={asset.assetId} asset={asset} />
+                <ProductCard key={asset.assetId} asset={asset} onAddToRoom={onAddToRoom} />
               ))}
             </div>
           )}
