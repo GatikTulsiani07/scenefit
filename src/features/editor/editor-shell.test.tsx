@@ -12,6 +12,8 @@ describe('EditorShell', () => {
 
     expect(html).toContain('Furniture catalogue');
     expect(html).toContain('central 3d canvas');
+    expect(html).toContain('Static room preview');
+    expect(html).toContain('Reset camera');
     expect(html).toContain('right selected-object inspector');
     expect(html).toContain('save');
     expect(html).toContain('share');
