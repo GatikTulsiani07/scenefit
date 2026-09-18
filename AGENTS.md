@@ -1,98 +1,95 @@
-# SceneFit Agent Instructions
-
-This file defines the repository-wide operating rules for Jared and any other coding agent working on SceneFit.
+# SceneFit Agent Guide
 
 ## 1. Mission
 
-Build the SceneFit V1 MVP described in `spec.md`:
+Build SceneFit as a vertical-agnostic visual-commerce and spatial-visualization platform.
 
-> A branded browser-based furniture visualizer where customers place a business's real products inside a predefined 3D room, save the arrangement, and share a read-only design.
+The engine remains generic; a business's catalogue, branding, categories, pricing, and calls to action make each experience specific. Furniture is demonstration content, not the permanent core abstraction.
 
-The V1 goal is a polished pilot demonstration, not the complete spatial-commerce platform.
+Before every issue, read the complete assigned issue, `spec.md`, this file, and the directly relevant implementation/tests.
 
-## 2. Source of truth
+## 2. Source-of-truth order
 
-Read these sources before planning or changing code:
-
-1. The assigned GitHub issue.
-2. `spec.md`.
-3. Existing repository code and tests.
-4. Relevant accepted architecture decisions under `docs/decisions/`, when present.
-
-Priority when instructions conflict:
-
-1. The latest explicit instruction from a human maintainer.
-2. The assigned issue, if it intentionally updates the specification.
+1. Latest explicit human-maintainer instruction.
+2. Assigned issue when it intentionally changes scope.
 3. `spec.md`.
 4. This file.
-5. Existing implementation conventions.
+5. Existing conventions.
 
-Do not interpret an ambiguous issue as permission to invent product behaviour. Ask one focused question or stop with a concise blocker when the answer would materially change the implementation.
+Ask one focused question or report a blocker when ambiguity would materially change behaviour, data, security, or scope.
 
-## 3. V1 boundaries
+## 3. Domain-language rules
 
-The active V1 includes:
+For new platform contracts and reusable components, prefer:
 
-- One demonstration furniture business and fixed brand.
-- One predefined living room.
-- Exactly ten seeded furniture products.
-- A catalogue with product details and category filtering.
-- Adding, selecting, moving, rotating, and deleting furniture.
-- Floor-plane translation on X/Z only.
-- Vertical-axis rotation on Y only.
-- Real-world product dimensions with no arbitrary resizing.
-- Local editor state.
-- Save and reopen project flows.
-- Non-guessable, read-only sharing links.
-- Loading, empty, error, and recovery states.
-- Desktop-first editing and responsive landing/share pages.
-- Automated checks, deployment readiness, and visual verification.
+- `Business`
+- `Catalog`, `CatalogItem`, `CatalogItemCard`
+- `DigitalAsset`, `AssetVariant`, `AssetStatus`
+- `VisualizationProject`
+- `Space`
+- `Scene`, `SceneObject`
+- `Placement`, `PlacementControls`
+- `CustomerRequest`
 
-Do not implement any excluded feature unless a maintainer first revises the specification or explicitly authorizes it in the issue. Excluded features include:
+Do not introduce new core architecture named for furniture, sofas, living rooms, event stages, or another vertical.
 
-- AI features of any kind.
-- Customer room upload, reconstruction, scanning, LiDAR, or AR.
-- AI-generated 3D assets or an AI interior designer.
-- Free-form furniture resizing.
-- Authentication, multi-tenancy, or an admin dashboard.
-- Quotations, WhatsApp, checkout, payments, or billing.
-- Real-time collaboration.
-- A separate Express, Hono, or standalone Node.js backend.
-- Queues, workers, microservices, or speculative abstractions for future products.
+Existing furniture-oriented demo files and `SceneDataV1` are compatibility constraints. Do not perform a repository-wide rename or schema migration inside a feature issue. Use adapters and incremental boundaries, and change persisted schemas only in a dedicated, versioned, tested issue.
 
-Prefer the smallest implementation that completely satisfies the assigned issue and preserves the architecture in `spec.md`.
+## 4. MVP boundaries
 
-## 4. Approved technical direction
+The target MVP proves:
 
-- Package manager: `pnpm`.
-- Application: Next.js with React and TypeScript.
-- TypeScript: strict mode.
-- Styling: Tailwind CSS.
-- UI primitives: shadcn/ui.
-- Icons: Lucide React.
-- 3D: Three.js, React Three Fiber, and Drei.
-- Editor state: Zustand.
-- Validation: Zod; infer TypeScript types from schemas where practical.
-- Persistence: Supabase Postgres.
-- Binary assets: Supabase Storage.
-- Hosting target: Vercel.
-- 3D asset format: GLB/glTF.
-- Architecture: one modular Next.js application with clear feature boundaries.
+```text
+Business catalogue item
+→ image and optional digital asset
+→ customer-space visualization
+→ place/configure
+→ save/share
+→ customer quote or enquiry
+→ business follow-up
+```
 
-Do not replace an approved technology or add a material dependency without explaining why the existing stack cannot satisfy the requirement.
+Do not implement without explicit approval:
 
-## 5. Expected source boundaries
+- Full CAD, BIM, architectural drafting, or complex floor planning.
+- An in-house AI 3D foundation model.
+- AR, VR, 360 environments, or video visualization.
+- Depth/perspective/occlusion/lighting AI pipelines.
+- Full CRM, ERP, billing, checkout, or enterprise analytics.
+- Separate applications or core architectures per industry.
+- Speculative microservices, queues, or provider abstractions with no current use.
 
-Keep domain logic out of page components. Prefer feature-oriented ownership consistent with:
+## 5. Approved technical direction
+
+- `pnpm`.
+- Next.js, React, and strict TypeScript.
+- Tailwind CSS and shadcn/ui.
+- Lucide React icons.
+- Three.js, React Three Fiber, and Drei.
+- Zustand editor state.
+- Zod runtime validation.
+- Supabase Postgres and Storage where already configured.
+- Vercel hosting target.
+- GLB/glTF for 3D assets.
+- One modular Next.js application with explicit feature boundaries.
+
+Do not replace approved technology or add a material dependency without showing why the existing stack is insufficient.
+
+## 6. Feature boundaries
+
+Prefer:
 
 ```text
 src/
 ├── app/
 ├── components/ui/
-├── features/assets/
-├── features/editor/
+├── features/business/
+├── features/catalog/
+├── features/digital-assets/
 ├── features/projects/
-├── features/sharing/
+├── features/editor/
+├── features/customer-experience/
+├── features/customer-requests/
 ├── lib/supabase/
 ├── lib/validation/
 ├── lib/env/
@@ -102,250 +99,163 @@ src/
 
 Rules:
 
-- Keep normal application UI separate from Three.js scene logic.
-- Keep persisted schemas versioned and separate from transient UI state.
-- Treat the Zod scene schema as the runtime authority.
-- Centralize environment validation and server-only clients.
-- Never expose Supabase service-role credentials to client code.
-- Do not duplicate types that can be inferred or shared safely.
-- Avoid premature generic frameworks for a one-room, ten-product MVP.
+- Keep domain logic out of page components.
+- Keep normal UI separate from Three.js scene logic.
+- Keep persisted schemas versioned and separate from transient state.
+- Infer types from Zod schemas where practical.
+- Centralize server-only clients and environment validation.
+- Keep provider secrets and Supabase service-role credentials out of client bundles.
+- Reuse existing code through adapters before duplicating it.
+- Do not add generic business logic to a furniture-specific module merely because it exists.
 
-## 6. Issue workflow
+## 7. Mandatory repository audit
+
+Before starting a new phase or backend-facing feature, inspect:
+
+- Framework, routing, and rendering boundaries.
+- Existing database/schema and migrations.
+- Authentication and authorization.
+- Supabase clients, storage, and Row Level Security.
+- APIs/server actions and validation.
+- Current domain types and persisted scene versions.
+- Existing UI components and styling.
+- Existing 3D libraries and canvas behaviour.
+- Tests, incomplete work, and relevant technical debt.
+
+Map existing concepts before creating new tables, APIs, or stores. Do not perform destructive migrations without a dedicated approved plan.
+
+## 8. Delivery phases
+
+Follow the active phase in `spec.md`. Preserve already merged foundations.
+
+- Phase 0: alignment and audit.
+- Phase 1: app shell, dashboard, catalogue, catalogue-item creation.
+- Phase 2: digital-asset generation/upload and preview.
+- Phase 3: visualization projects and customer spaces.
+- Phase 4: generic visualization editor and persistence.
+- Phase 5: business-branded customer experience and compare.
+- Phase 6: customer requests and follow-up.
+
+Do not automatically continue into the next phase. Finish, verify, report, and wait for approval.
+
+## 9. Issue workflow
 
 For every issue:
 
-1. Run the self-loop guard supplied by Jared/OpenTower.
-2. Load `repo-setup` and the correct situation skill.
-3. Read the entire issue and only the relevant repository context.
-4. Confirm the issue has testable acceptance criteria.
-5. Write a short implementation plan before material changes.
-6. Work on one dedicated branch.
-7. Implement only the assigned deliverable.
-8. Add or update relevant tests.
-9. Run the smallest useful checks during iteration.
-10. Run all required checks once before opening or updating the PR.
-11. Use `deslop` before the final commit.
-12. Open a draft PR using the `pr` skill.
-13. Include the implementation plan, verification results, screenshots when required, limitations, and any follow-up work.
+1. Read the issue, `spec.md`, `AGENTS.md`, and relevant code/tests.
+2. Inspect `git status --short --branch` and the branch diff.
+3. Confirm testable acceptance criteria and exclusions.
+4. Write a concise implementation plan.
+5. Use one dedicated branch.
+6. Implement only the assigned deliverable.
+7. Add/update meaningful tests.
+8. Run targeted checks while iterating.
+9. Run all required checks once the implementation stabilizes.
+10. Inspect the final diff and remove unrelated changes.
+11. Open a draft PR with exact results, screenshots, limitations, and follow-ups.
 
-Suggested branch names:
+Never push directly to `main`, merge your own PR, combine unrelated issues, rewrite history, weaken strictness, or commit secrets/generated credentials.
 
-```text
-feat/001-project-foundation
-feat/002-design-system
-feat/003-scene-contracts
-fix/014-model-load-error
-chore/020-ci-cache
-```
+## 10. Required checks
 
-Never:
-
-- Push directly to `main`.
-- Merge a PR.
-- combine unrelated issues in one branch or PR.
-- Change architecture silently.
-- Modify unrelated files for aesthetic cleanup.
-- Disable tests, lint rules, validation, or strictness to make checks pass.
-- Commit generated credentials, `.env` files, tokens, or production data.
-- Rewrite history or force-push unless a maintainer explicitly requests it.
-
-## 7. GitHub event behaviour
-
-Jared must triage the raw webhook payload before acting.
-
-### Assigned issue
-
-- Act only when Jared/the configured bot is assigned or explicitly requested.
-- Load `repo-setup` and `resolve-issue`.
-- Plan, implement, verify, clean the diff, and open a draft PR.
-
-### Pull request review
-
-- Load `repo-setup` and `review-pr`.
-- Review against the default branch, issue acceptance criteria, `spec.md`, and this file.
-- Prioritize correctness, regressions, security, data integrity, performance, and missing tests.
-- Do not manufacture findings to appear useful.
-
-### CI failure
-
-- Load `repo-setup` and `fix-ci`.
-- Confirm the failure belongs to the current PR before editing.
-- Apply the smallest relevant fix.
-- Respect the three-attempt CI repair limit.
-- After three unsuccessful attempts, stop and report the failure, evidence, and recommended human next step.
-
-### Review comment or PR comment
-
-- Load `repo-setup` and `respond-to-comment`.
-- Distinguish a requested code change from a question or discussion.
-- Make only the requested or clearly necessary change.
-- Reply with what changed and the verification performed.
-
-### Self-loop safety
-
-- If `payload.sender.login` is Jared/the configured bot identity, return `SKIPPED: self-triggered`.
-- The exception is a relevant `check_suite.completed` event emitted by the CI application.
-- Never create work merely in response to Jared's own comments or PR activity.
-
-## 8. Required checks
-
-The repository must expose scripts equivalent to:
+Before a PR is ready for human review:
 
 ```bash
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+git diff --check
 ```
 
-Before a PR is ready for human review, all four must pass. During development, run targeted tests first to reduce time and token usage, then run the full suite once after the implementation stabilizes.
+Do not repeatedly rerun an unchanged failure. Inspect it, form a hypothesis, make one focused change, and rerun the narrowest useful check.
 
-Do not repeatedly rerun an unchanged failing command. Read the error, form a specific hypothesis, make one focused change, and rerun the narrowest relevant check.
+## 11. Testing expectations
 
-## 9. Testing expectations
+- Unit tests for schemas, adapters, status transitions, stores, serialization, hydration, and pure editor constraints.
+- Component tests for user-visible catalogue, project, editor, customer, and request behaviour.
+- API tests for validation, ownership, tenant isolation, structured errors, and retry-safe operations.
+- End-to-end tests for the catalogue → project → editor → share → request loop as phases land.
+- Regression tests for bugs when stable automation is practical.
 
-Add tests at the lowest useful level:
+Avoid snapshot-only coverage and brittle pixel-level WebGL tests.
 
-- Unit tests for schemas, editor-store actions, serialization, hydration, and token helpers.
-- Component tests for catalogue controls, selection controls, dialogs, and visible error states.
-- API tests for validation, create/read/update, unknown assets, and sharing.
-- End-to-end tests for the main add → save → reopen → share flow.
+## 12. UI and browser verification
 
-Do not depend exclusively on snapshots. Assert meaningful behaviour and contracts.
+Compilation and unit tests are insufficient for UI/3D work.
 
-Every bug fix must include a regression test when a stable automated reproduction is practical.
-
-## 10. 3D and visual requirements
-
-Compilation and unit tests are insufficient for UI or 3D work.
-
-For every UI or 3D PR:
+For every relevant PR:
 
 - Start the application and inspect the affected flow in a real browser.
-- Check the browser console for warnings and errors.
-- Include a screenshot or short recording in the PR.
-- Confirm that models load, sit on the floor, use the correct scale, and remain selectable.
-- Confirm camera controls and object transform controls do not fight each other.
-- Confirm movement is restricted to X/Z and rotation to Y.
-- Confirm there are no arbitrary scale controls.
-- Confirm loading and failure states are understandable.
-- Check the relevant responsive layouts.
+- Check desktop and relevant mobile layouts.
+- Inspect the browser console for application errors and warnings.
+- Exercise keyboard, pointer, loading, empty, failure, retry, and success states.
+- For 3D work, verify camera/transform interactions, floor placement, selection, scale policy, model failure, and WebGL fallback.
+- Save screenshots or a short recording outside the repository unless an issue requests otherwise.
 
-Do not claim visual verification if browser access or required assets were unavailable. Report the limitation explicitly.
+Never claim interactive or console verification when it could not be completed.
 
-Performance rules:
+## 13. 3D and performance rules
 
-- Do not load every GLB eagerly without a measured reason.
-- Avoid React state updates that unnecessarily re-render the scene on every pointer event.
-- Keep transform interaction local; do not write to the database while dragging.
-- Preserve stable product instance IDs.
-- Treat product dimensions as authoritative.
-- Optimize models and textures outside runtime where practical.
+- Treat the real customer environment as the primary experience.
+- Keep rendering separate from commerce and persistence logic.
+- Use stable placement/instance IDs.
+- Lazy-load models; do not eagerly load the full catalogue.
+- Use thumbnails for catalogue browsing.
+- Optimize images and GLB/glTF assets outside runtime.
+- Avoid React state updates on every animation frame.
+- Keep transforms local while dragging; persist only controlled commits/autosave.
+- Dispose Three.js resources and clean up listeners.
+- Preserve the current `SceneDataV1` transform constraints until a dedicated versioned issue changes them.
 
-## 11. Data, API, and security rules
+## 14. Data, API, and security rules
 
-- Validate all incoming API data with Zod.
-- Validate finite numeric transforms and reasonable scene bounds.
-- Reject unknown asset IDs and unsupported scene versions.
-- Apply explicit limits to project names and scene payload size.
-- Return the structured success/error envelopes defined in `spec.md`.
-- Generate sharing tokens cryptographically and store hashes rather than plaintext tokens.
-- Shared projects must never mutate the original project.
-- Treat names and metadata as untrusted input.
-- Never log secrets, full authorization headers, webhook secrets, or raw credentials.
-- Never include secret values in PR descriptions, comments, screenshots, fixtures, or test output.
-- Keep server-only environment variables out of client bundles.
+- Validate untrusted input with Zod.
+- Reject non-finite transforms, unknown asset IDs, duplicate placement IDs, and unsupported scene versions.
+- Hydration is atomic; failures cannot partially mutate state.
+- Validate upload type/size and scene payload limits.
+- Use explicit structured success/error results.
+- Enforce business ownership for catalogue, assets, projects, scenes, and requests.
+- Audit RLS before changing Supabase policies.
+- Public share access must be non-guessable and scoped.
+- Never log or expose secrets, raw authorization headers, provider credentials, or sensitive customer data.
+- External asset-generation providers are accessed server-side through a replaceable interface.
 
-When authentication remains excluded, document that editable project URLs are demonstration-grade. Do not silently present them as secure production ownership.
+## 15. UX rules
 
-## 12. Cost-aware model policy
+- Business UI is desktop-first; customer visualization is responsive-first.
+- Use configurable categories, pricing, currency, and primary action.
+- Never hard-code AED in reusable pricing components.
+- Provide action-oriented empty states.
+- Preserve local work on save failures.
+- Do not expose stack traces or provider internals to users.
+- Use accessible primitives, visible focus, adequate touch targets, and textual canvas alternatives.
+- Avoid heavy gradients, neon/gamer styling, excessive glassmorphism, tiny controls, clutter, and unnecessary animation.
 
-The MVP has an approximate total OpenAI API budget of **USD 50**. Treat this as a hard project constraint, not a per-run allowance.
+## 16. Cost-aware agent policy
 
-Recommended OpenTower configuration:
+Keep issues small and cohesive. Use targeted repository searches, inspect direct dependencies, and avoid pasting lockfiles, binaries, generated output, raw webhook payloads, or unrelated diffs into model context.
 
-```env
-OPENTOWER_AGENT_MODEL=openai/gpt-5.6-luna
-OPENTOWER_AGENT_FALLBACK_MODEL=openai/gpt-5.6-terra
-OPENTOWER_AGENT_MAX_ATTEMPTS=2
-```
+Do not start parallel agents for one issue unless a human explicitly requests it. Do not spend retries on missing permissions, unavailable services, missing assets, or ambiguous requirements; report the blocker.
 
-Run `opencode models` during Jared deployment and use the exact provider/model identifiers it reports if they differ from the examples above.
+If the deployment has a configured model/budget policy, follow it. Never upgrade models, purchase credits, or trigger paid external generation automatically.
 
-Model rules:
+## 17. Pull request standard
 
-- Use `gpt-5.6-luna` by default for webhook triage, repository exploration, planning, issue comments, PR summaries, straightforward implementation, test updates, and simple CI fixes.
-- Escalate to `gpt-5.6-terra` only after the primary attempt fails for a concrete technical reason, or when the task requires difficult multi-file reasoning, 3D interaction logic, persistence/security design, or diagnosis of a non-obvious failure.
-- Do not use `gpt-6-astra` automatically. A human maintainer must explicitly approve it for one named task.
-- Do not retry with the fallback when the blocker is missing requirements, missing assets, permissions, unavailable services, or a failing external dependency. Report the blocker instead.
-- Never start parallel agent sessions for the same issue.
-- Keep each issue small enough to finish in one focused implementation session.
-- Reuse the session-affinity context already maintained by OpenTower; do not re-read or restate the entire repository on every follow-up event.
-- Search with `rg` and inspect targeted files before opening broad directories or large generated files.
-- Do not paste lockfiles, generated output, binaries, full webhook payloads, or unrelated diffs into reasoning or comments.
-- Prefer concise plans and status messages. Spend tokens on implementation and verification.
-- Stop after repeated uncertainty; one focused human question is cheaper than speculative implementation and rollback.
-
-Budget operating targets:
-
-- Reserve **$10** of the $50 balance for late-stage integration, deployment, and unexpected fixes.
-- Treat **$40** as the working implementation budget.
-- Review provider usage after every five completed issues.
-- Pause new agent assignments if total spend reaches **$35** before the main add → save → reopen → share flow works.
-- Do not top up automatically. A human decides whether additional credit is justified.
-
-The token ceiling should be tuned after the first two real issues because OpenTower's exact `MAX_TOKENS` semantics and model behaviour must be measured in the deployed setup. Start conservatively; do not set an artificially large limit merely to avoid a possible retry.
-
-## 13. Efficient context rules
-
-Before coding:
-
-- Read `spec.md` once per new issue session.
-- Inspect only files relevant to the issue and their direct dependencies.
-- Use existing schemas, utilities, and components before creating new ones.
-- Check current tests and conventions before proposing a new pattern.
-
-While coding:
-
-- Make cohesive patches rather than repeatedly rewriting the same file.
-- Run formatters and targeted tests locally instead of asking the model to reason about mechanical output.
-- Keep comments for non-obvious constraints; do not narrate obvious code.
-- Avoid duplicate documentation between the issue, PR, code, and spec.
-
-When blocked:
-
-- State the exact blocker.
-- Include the command/error or missing decision.
-- Explain the smallest action needed from a maintainer.
-- Do not consume a fallback attempt on a non-model-solvable blocker.
-
-## 14. Pull request standard
-
-Every draft PR must include:
+Every draft PR includes:
 
 - Linked issue.
-- Short problem statement.
-- Approved implementation plan.
-- Summary of material changes.
-- Tests added or updated.
-- Exact checks run and their results.
-- Screenshot/recording for UI or 3D changes.
-- Known limitations or deferred work.
-- Confirmation that no excluded V1 feature was introduced.
+- Problem statement and approved plan.
+- Material changes and exact files.
+- Tests added/updated.
+- Exact verification commands/results.
+- Screenshots/recording for UI or 3D work.
+- Browser-console result.
+- Known limitations and deferred work.
+- Confirmation that unrelated or excluded scope was not introduced.
 
-Keep PRs reviewable. If an issue grows beyond one coherent deliverable, stop and propose a split before continuing.
+## 18. Definition of done
 
-## 15. Definition of done
+An issue is complete only when acceptance criteria are satisfied, relevant tests pass, required checks pass, loading/error/recovery behaviour is covered, UI/3D work is visually verified, the diff is clean, contracts/docs are updated when needed, and a human-reviewable draft PR reports all limitations accurately.
 
-An issue is complete only when:
-
-- Its acceptance criteria are satisfied.
-- Relevant automated tests exist and pass.
-- Lint, typecheck, test, and build pass.
-- Loading, empty, failure, and recovery behaviour is covered where relevant.
-- UI/3D work has been visually verified.
-- The diff contains no unrelated changes or AI-generated noise.
-- Contracts and documentation are updated when behaviour changed.
-- A draft PR clearly reports verification and limitations.
-
-Jared prepares work for review. Final approval and merge authority always remain with a human maintainer.
+Coding agents prepare work for review. Final architectural approval and merge authority remain with human maintainers.

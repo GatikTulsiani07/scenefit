@@ -1,683 +1,433 @@
-# SceneFit — MVP Product and Technical Specification
+# SceneFit — Product and Technical Specification
 
-**Status:** Draft v0.3  
-**Audience:** Founders, product owner, Jared coding agent, reviewers  
-**Product name:** SceneFit  
-**Tagline:** See it in your space.  
-**Repository name:** `scenefit`  
-**Target vertical:** Furniture retail  
-**Architecture:** Modular monolith  
+**Status:** Draft v1.0  
+**Audience:** Founders, product owner, coding agents, reviewers  
+**Product:** SceneFit  
+**Positioning:** Vertical-agnostic visual commerce and spatial visualization  
+**Architecture:** Modular Next.js monolith
 
 ---
 
-## 1. Executive Summary
+## 1. Product thesis
 
-SceneFit is a browser-based furniture visualizer for one demonstration furniture business. A customer opens a branded experience, browses a catalogue of ten products, places products inside one predefined 3D living room, moves and rotates them, saves the design, reopens it later, and creates a read-only sharing link.
+SceneFit is the visual layer between a business's offering and its customer's real-world environment.
 
-The MVP is intended to answer one business question:
+The core loop is:
 
-> Will furniture businesses and their customers find a simple branded 3D visualizer valuable enough to pilot and eventually pay for?
+```text
+Business offering + customer environment
+                ↓
+       Visualize and configure
+                ↓
+          Save and share
+                ↓
+      Enquire, quote, book, or buy
+```
 
-The MVP is not the complete spatial-commerce platform. It deliberately excludes AI room reconstruction, customer room scanning, augmented reality, AI-generated 3D models, quotations, WhatsApp, payments, business administration, authentication, and multi-tenancy.
+SceneFit is not a furniture-only application, a room-design application, a floor-plan tool, or CAD software. Furniture is the initial demonstration content, but the core architecture must also support events, interiors, offices, hospitality, retail, real estate, kitchens, landscaping, automotive, and other visual businesses.
 
----
+The product promise is:
 
-## 2. Problem
+> Bring your offering into your customer's world.
 
-Furniture customers struggle to imagine how a product will look and fit inside a room. Product photos and showroom displays do not provide enough spatial confidence. This uncertainty can delay purchases, increase reliance on salespeople, and cause customers to abandon otherwise suitable products.
+## 2. Product principles
 
-Medium-sized furniture businesses often cannot justify building a custom IKEA-style visualization system. The proposed product gives them a branded digital showroom built on shared platform technology.
+1. **Vertical-agnostic engine, business-specific experience.** The platform uses generic concepts; each business's catalogue, branding, categories, pricing, and call to action make the experience specific.
+2. **The customer's real environment is the hero.** The interface should help users understand an offering in context, not teach them professional 3D software.
+3. **Canva-simple, Spline-capable, commerce-oriented.** Manipulation should feel direct and approachable, while the journey ends in a meaningful customer action.
+4. **Progressive capability.** A catalogue item may be image-only, 3D-ready, processing, failed, or awaiting review.
+5. **Reuse before replacement.** Existing schemas, APIs, storage, authorization, and working editor foundations must be audited and mapped before new equivalents are introduced.
+6. **MVP discipline.** Build the smallest complete visual-commerce loop. Do not pre-build CAD, AR, a foundation AI model, complex CRM, checkout, or industry-specific platforms.
 
----
+## 3. Canonical domain language
 
-## 3. Product Goal
+Core code and new persisted contracts should prefer these terms:
 
-Build the smallest polished experience that allows a furniture-business prospect to understand the long-term value of spatial commerce.
+| Concept | Meaning |
+| --- | --- |
+| `Business` | The company using SceneFit |
+| `Catalog` | A business-owned collection of offerings |
+| `CatalogItem` | A product, service, package, or spatial offering |
+| `DigitalAsset` | A 2D image, 3D model, thumbnail, texture, or related asset |
+| `AssetVariant` | A visual or configurable variation of an asset |
+| `VisualizationProject` | A customer-specific visualization container |
+| `Space` | The customer's real environment or environment representation |
+| `Scene` | The visual state for a project |
+| `Placement` | One placed instance of a catalogue item/digital asset |
+| `CustomerRequest` | A quote, enquiry, callback, booking, or other action request |
+| `Lead` | A business follow-up record derived from customer activity |
 
-### Primary goal
+Avoid introducing new core concepts named `FurnitureProduct`, `FurnitureRoom`, `SofaPosition`, or other vertical-specific variants. UI copy may use vertical-specific language when it comes from business configuration.
 
-Demonstrate a smooth end-to-end flow:
+### Compatibility rule
 
-1. Open the branded visualizer.
-2. Enter the predefined living room.
-3. Browse ten furniture products.
-4. Add products to the room.
-5. Select, move, rotate, and delete placed products.
-6. Save the design.
-7. Reopen the saved design.
-8. Create and open a read-only sharing link.
+The repository currently contains furniture-oriented demo modules and a `SceneDataV1` contract with `roomId` and `placedAssets`. Do not perform a broad rename or destructive schema migration merely to match this document. Preserve working behaviour and introduce generic boundaries incrementally. Any schema evolution must be versioned, tested, and backwards compatible or accompanied by an explicit migration plan.
 
-### Secondary goals
+## 4. Users and experiences
 
-- Demonstrate accurate product scale using business-provided dimensions.
-- Validate browser performance with optimized GLB assets.
-- Create a technical foundation that can later support tenants, AI workers, quotations, and AR without including those systems now.
+### Business user
 
----
+The business user manages catalogue items and digital assets, creates customer visualizations, shares them, and follows up on requests.
 
-## 4. Success Criteria
+### Customer
 
-The MVP is successful when all of the following are true:
+The customer opens a business-branded link, sees an offering inside a real environment, explores or configures the result, compares it with the original, and submits a request.
 
-- A first-time user can place their first product within 30 seconds of opening the editor.
-- A user can complete the main design flow without instructions from a developer.
-- The editor maintains interactive performance on the supported reference devices.
-- Saved projects reopen with the same products, positions, and rotations.
-- A read-only shared project cannot modify the original project.
-- At least one real furniture business agrees to review or pilot the demo.
-- Feedback is collected from at least five furniture-business stakeholders or salespeople.
+### Internal operator
 
-These are validation targets, not analytics requirements for the first coding milestone.
+During early MVP stages, an internal operator may seed data, inspect failed asset jobs, and assist with content. Do not build a complex administration suite for this role.
 
----
+## 5. End-to-end MVP journey
 
-## 5. Users
+### Business journey
 
-### 5.1 Primary user: Furniture customer
+1. Create or access a business profile.
+2. Create or import a catalogue.
+3. Add a catalogue item and upload images.
+4. Optionally upload or request generation of a digital asset.
+5. Review the asset status.
+6. Create a visualization project.
+7. Upload a real customer-space image.
+8. Open the visual editor.
+9. Select catalogue items and place/configure them.
+10. Save and share the visualization.
+11. Receive a customer request and follow up.
 
-The customer wants to explore combinations of furniture inside a representative living room before contacting the business.
+### Customer journey
 
-### 5.2 Secondary user: Furniture salesperson
+1. Open the business-branded shared experience.
+2. See the customer's real environment.
+3. Browse approved catalogue items.
+4. Place and configure offerings.
+5. Compare the original and visualized states.
+6. Save or share where enabled.
+7. Request a quote or submit an enquiry.
 
-The salesperson wants to use the visualizer during a conversation to demonstrate combinations and share a design with a customer.
+The MVP primary action is `REQUEST_QUOTE` or `ENQUIRE`. The action model must remain extensible to callback, consultation, booking, purchase, and contact actions without implementing them now.
 
-### 5.3 Internal technical operator
+## 6. Core screens and routes
 
-For V1, initial products and models are seeded manually by the development team. There is no admin portal.
+The initial product should remain focused. The core business/customer experience is six screen families, implemented through the following routes:
 
----
+| Screen family | Routes | Purpose |
+| --- | --- | --- |
+| Business dashboard | `/dashboard` | Summary, recent projects, recent requests, primary actions |
+| Product library | `/catalog`, `/catalog/new`, `/catalog/[id]` | Manage catalogue items and digital-asset readiness |
+| Visualization projects | `/projects`, `/projects/new` | Create and manage customer-specific projects and spaces |
+| Visualization editor | `/projects/[projectId]/editor` | Place and configure catalogue items in a space |
+| Customer share/view | `/design/[projectId]` | Business-branded customer experience and compare flow |
+| Leads/quotes | `/leads`, `/leads/[id]` | Review customer requests and follow-up status |
 
-## 6. V1 Scope
+Future branded routing may use `/b/[businessSlug]` and `/b/[businessSlug]/design/[projectId]`.
 
-### 6.1 Included
+Do not create vertical routes such as `/furniture`, `/sofas`, or `/living-room` as platform primitives.
 
-- One demonstration furniture business.
-- One fixed brand configuration.
-- One predefined 3D living room.
-- Exactly ten seeded furniture products.
-- Product catalogue with categories and thumbnails.
-- Product-detail information required for selection.
-- 3D GLB/glTF product models.
-- Accurate product dimensions.
-- Add a product to the room.
-- Select a placed product.
-- Move a selected product along the floor plane.
-- Rotate a selected product around the vertical axis.
-- Delete a selected product.
-- Reset the design with confirmation.
-- Save a project.
-- Reopen a saved project.
-- Create a non-guessable sharing link.
-- Read-only shared-project view.
-- Loading, empty, failure, and recovery states.
-- Desktop-first responsive interface.
-- Basic automated tests and CI checks.
-
-### 6.2 Explicitly excluded
-
-- Customer room-photo upload.
-- AI-assisted room reconstruction.
-- Room scanning.
-- LiDAR integration.
-- Augmented reality.
-- AI-generated furniture models.
-- AI interior designer.
-- Free-form product resizing.
-- Quotations.
-- WhatsApp integration.
-- Checkout or payments.
-- Customer or employee authentication.
-- Admin dashboard.
-- Catalogue import interface.
-- Multiple businesses or tenants.
-- Custom domains.
-- Event-management workflows.
-- Real-estate workflows.
-- Dedicated Express, Hono, or standalone Node.js API.
-- Job queues or background AI workers.
-- Real-time collaboration.
-- Comments, likes, or social features.
-- Production billing and subscription management.
+## 7. Screen requirements
 
-Excluded functionality must not be implemented speculatively.
-
----
-
-## 7. Product Rules
-
-1. Real products retain their real-world dimensions.
-2. Users cannot arbitrarily resize furniture.
-3. Move operations are constrained to the floor plane.
-4. Rotation is constrained to the vertical axis in V1.
-5. A newly added product must appear in a valid, visible location.
-6. Products must not be placed below the floor.
-7. Collision prevention is not required in V1, but grossly invalid placement should be avoided.
-8. Shared projects are read-only.
-9. Editing occurs locally for responsiveness; the server is not called on every transform change.
-10. The server validates all persisted scene data.
-11. Storage paths and database writes must not expose privileged credentials to the browser.
-12. The application must present unsupported or failed model loads gracefully.
+### 7.1 Business dashboard
 
----
-
-## 8. Primary User Flow
+- Vertical-neutral navigation: Dashboard, Catalog, Projects, Leads, Settings.
+- Primary actions: **New visualization** and **Add catalog item**.
+- Summary metrics: projects, catalogue items, digital assets, and customer requests.
+- Recent visualizations and recent customer requests.
+- Action-oriented empty states.
 
-### 8.1 Start a design
+### 7.2 Product library
 
-1. User opens the landing page.
-2. User sees the demo business branding and primary call to action.
-3. User selects **Design your room**.
-4. The design page loads the catalogue and predefined room.
-5. A progress state is shown while 3D assets load.
-6. The editor becomes interactive when minimum required assets are ready.
+- Search, configurable category filter, and digital-asset status filter.
+- Responsive grid/list of catalogue-item cards.
+- Each card shows thumbnail, name, category, price representation, asset status, preview, and edit action.
+- Asset states: `NO_ASSET`, `QUEUED`, `PROCESSING`, `NEEDS_REVIEW`, `READY`, `FAILED`, and `ARCHIVED` where applicable.
+- Categories are business data, not hard-coded platform enums.
+- Currency and pricing format are configurable; never hard-code AED in core components.
 
-### 8.2 Add and arrange products
+### 7.3 Add/edit catalogue item
 
-1. User browses or filters the catalogue.
-2. User selects a product card.
-3. User chooses **Add to room**.
-4. A new product instance appears in the room.
-5. The new instance becomes selected.
-6. User moves or rotates the selected product.
-7. User may add multiple instances of a product unless the product metadata forbids it.
-8. User may delete a selected instance.
-
-### 8.3 Save a design
-
-1. User selects **Save**.
-2. If the project has not been saved before, the user enters a project name and optional customer name.
-3. Client state is serialized into the scene-data contract.
-4. Server validates and persists the project.
-5. UI confirms success and updates the URL to the saved project.
-6. Save failure preserves local work and allows retry.
+- Name, description, category, type, SKU/reference.
+- Flexible pricing: fixed, starting from, per unit/time/area/event, custom quote, or hidden.
+- Optional dimensions and availability metadata.
+- Multi-image upload with useful progress and validation.
+- Optional digital-asset generation request or manual asset upload.
+- Image-only items remain valid.
+- Generation provider details and API credentials remain server-side.
+
+### 7.4 Visualization project creation
+
+- Project name and optional customer details.
+- Configurable space type.
+- Upload a real environment image.
+- Clear processing, failure, retry, and replacement states.
+- Create the project before opening the editor.
 
-### 8.4 Reopen a design
+### 7.5 Visualization editor
 
-1. User opens `/projects/[id]`.
-2. Server retrieves the project.
-3. Client loads required assets.
-4. Product instances are recreated from saved scene data.
-5. User continues editing.
+The editor mental model is `Space + Catalog + Scene + Placements`.
 
-### 8.5 Share a design
+Desktop layout:
 
-1. User saves the project.
-2. User selects **Share**.
-3. Server creates or returns a non-guessable share token.
-4. UI displays a copyable `/share/[token]` URL.
-5. Recipient opens the shared URL.
-6. Recipient can inspect and navigate the scene but cannot edit or save over the project.
+- Top bar: back/project, undo, redo, save, share, and preview.
+- Left panel: searchable/filterable catalogue.
+- Centre: the real customer environment and visual scene.
+- Right panel: selected placement properties and actions.
+- Compare controls: Original, Visualized, Compare, Reset.
 
----
+Core editor actions:
 
-## 9. Pages and Routes
+- Add a catalogue item to the scene.
+- Select a placement.
+- Move, rotate, and scale where the asset/project policy allows it.
+- Duplicate and delete.
+- Change a supported variant.
+- Save and recover from save failure without losing local work.
 
-### `/`
+The current furniture demo constrains movement to X/Z, rotation to Y, and disallows arbitrary scale. Preserve those constraints until a later versioned scene/placement contract explicitly supports generic scaling safely.
 
-Branded landing page.
+### 7.6 Customer experience
 
-Required content:
+- Business identity, not internal SaaS chrome.
+- Real environment and visualized result are primary.
+- Approved catalogue and selected items.
+- Responsive-first controls with large touch targets, horizontal item browsing, drawers/bottom sheets, and minimal technical language.
+- Original/Visualized/Compare interaction.
+- Quote/enquiry form with clear success and failure states.
 
-- Business logo/name.
-- Short value proposition.
-- Preview of the 3D visualizer.
-- Primary **Design your room** call to action.
-- Clear indication that this is a demonstration.
+### 7.7 Customer requests
 
-### `/design`
+- Generic table/list: customer, project, selected items, value, status, and date.
+- Detail view with visualization, request message, contact details, selected items, and follow-up status.
+- Suggested statuses: `NEW`, `CONTACTED`, `QUOTED`, `CONVERTED`, `CLOSED`.
 
-New-project editor.
+## 8. Conceptual data model
 
-### `/projects/[id]`
+Adapt these entities to the repository and existing backend; do not blindly create duplicate tables.
 
-Editable saved project.
+```text
+Business
+  └─ Catalog
+      └─ CatalogItem
+          ├─ DigitalAsset
+          └─ AssetVariant
 
-### `/share/[token]`
+VisualizationProject
+  ├─ Customer
+  ├─ Space
+  ├─ Scene
+  │   └─ Placement[]
+  └─ CustomerRequest[]
+```
 
-Read-only project experience.
+### Catalogue item
 
-### API routes
+Conceptual fields include `id`, `businessId`, `name`, `description`, `category`, `type`, `sku`, pricing, dimensions, images, digital assets, variants, metadata, availability, and status.
 
-- `GET /api/assets`
-- `POST /api/projects`
-- `GET /api/projects/[id]`
-- `PUT /api/projects/[id]`
-- `POST /api/projects/[id]/share`
-- `GET /api/shared/[token]`
+`CatalogItem` and `DigitalAsset` are separate concepts. One item may have no asset, multiple images, a 3D model, variants, or future generated media.
 
-Exact implementation may use Next.js route handlers or server actions, but public contracts and validation behaviour must remain explicit and tested.
+### Placement
 
----
+```ts
+type Placement = {
+  id: string;
+  catalogItemId: string;
+  digitalAssetId?: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale?: [number, number, number];
+  variantId?: string;
+  quantity?: number;
+  metadata?: Record<string, unknown>;
+};
+```
 
-## 10. Editor Layout
+This is a conceptual future-facing shape, not authorization to mutate `SceneDataV1` inside an unrelated issue.
 
-Desktop layout contains:
+### Scene
 
-- Top navigation/header.
-- Left catalogue panel.
-- Central 3D canvas.
-- Right selected-object inspector or compact contextual panel.
-- Save and Share actions.
-- Loading and error overlays.
+```ts
+type Scene = {
+  id: string;
+  projectId: string;
+  backgroundAsset?: DigitalAssetReference;
+  placements: Placement[];
+  camera?: CameraState;
+  lighting?: LightingState;
+  settings?: Record<string, unknown>;
+};
+```
 
-### Catalogue panel
+Persisted schemas are versioned and validated with Zod. Hydration must be atomic. Unsupported versions and unknown assets return structured errors.
 
-- Product thumbnail.
-- Product name.
-- Category.
-- Price in AED.
-- Dimensions.
-- **Add to room** action.
-- Basic category filtering.
+## 9. Digital-asset lifecycle
 
-Search is optional for ten products and should only be added if it does not delay the main editor.
+The frontend must be provider-neutral. A backend service may expose actions such as `requestDigitalAssetGeneration()` while delegating to Meshy, Tripo, or another provider.
 
-### Selected-object controls
+- Secret keys never enter client code.
+- Long-running work is represented as a job/status, not a blocking request.
+- Users can retry failures and review generated output.
+- Full assets are loaded only when required.
+- GLB/glTF is the preferred 3D delivery format for the current engine.
+- The MVP does not train or host its own 3D foundation model.
 
-- Product name.
-- Price.
-- Dimensions.
-- Move mode.
-- Rotate mode.
-- Delete action.
-- Clear visible indication of selection.
+## 10. Technical architecture
 
-### Canvas controls
+### Approved stack
 
-- Orbit/pan/zoom camera controls appropriate for desktop.
-- Prevent camera from moving below the floor where practical.
-- Reset-camera action.
-- Clear interaction feedback.
-
-### Mobile behaviour
-
-The landing and shared pages must be responsive. The editor should remain viewable on mobile, but precise mobile editing is not a V1 acceptance requirement. On small screens, panels may become drawers or sheets.
-
----
-
-## 11. 3D Requirements
-
-### 11.1 Technology
-
-- Three.js.
-- React Three Fiber.
-- Drei helpers where appropriate.
-- GLB/glTF asset format.
-
-### 11.2 Room
-
-- One optimized, predefined living-room scene.
-- Floor is the authoritative placement plane.
-- Room includes suitable lighting or receives application-level lighting.
-- Room geometry is not editable.
-
-### 11.3 Product models
-
-- Ten optimized GLB models.
-- Model origin and pivot must support floor placement and vertical-axis rotation.
-- Product dimensions in the database are the source of truth.
-- Visual model scale must match stored dimensions.
-- Models must not depend on local filesystem paths in production.
-- Missing models display a non-blocking failure state or placeholder.
-
-### 11.4 Transform behaviour
-
-- Translation on X/Z floor axes only.
-- Rotation around Y axis only.
-- No arbitrary scale handles.
-- Product instance identity remains stable during edits and persistence.
-- Transform changes update client state immediately.
-
-### 11.5 Performance targets
-
-- Initial page shell should display before all 3D assets finish loading.
-- Required models use lazy loading where practical.
-- Visible loading progress is required.
-- Models and textures must be compressed/optimized before production use.
-- Avoid unnecessary React re-renders on every pointer movement.
-- Maintain an interactively usable frame rate on the agreed reference laptop.
-
-Exact numeric asset budgets should be finalized after inspecting the selected room and product models.
-
----
-
-## 12. Technical Architecture
-
-![SceneFit V1 MVP architecture](./assets/scenefit-v1-architecture.png)
-
-**Figure 1 — V1 MVP architecture.** The diagram shows the customer journey, modular Next.js application, 3D editor, local editor state, server layer, Supabase persistence and storage, Vercel deployment boundary, and functionality deferred beyond V1. The diagram was created before the product name was finalized; “Spatial Commerce” in its heading refers to **SceneFit**.
-
-### 12.1 Application
-
-- Next.js.
-- React.
-- TypeScript in strict mode.
-- Tailwind CSS.
-- shadcn/ui.
+- Next.js, React, and strict TypeScript.
+- Tailwind CSS and shadcn/ui primitives.
 - Lucide React icons.
-
-### 12.2 Client state
-
+- Three.js, React Three Fiber, and Drei.
 - Zustand for editor state.
-- Local transform updates.
-- Dirty/unsaved state tracking.
-- Server persistence only on Save or controlled autosave.
+- Zod for runtime contracts.
+- Supabase Postgres and Storage where the existing backend uses them.
+- Vercel hosting target.
+- `pnpm` package management.
 
-Autosave is optional for the first implementation. If included, it must be debounced and must not interfere with manual Save.
+Use one modular Next.js application. Add separate services or workers only when a concrete long-running integration requires them.
 
-### 12.3 Validation
-
-- Zod schemas for API inputs, scene data, and important environment variables.
-- TypeScript types should be inferred from schemas where practical to avoid contract drift.
-
-### 12.4 Persistence
-
-- Supabase Postgres for asset metadata, projects, and share tokens.
-- Supabase Storage for GLB files, thumbnails, textures, and the room model.
-- Next.js server routes form the privileged write boundary.
-- Service-role credentials must never be exposed in client bundles.
-
-### 12.5 Hosting
-
-- Vercel for the Next.js application.
-- Supabase-hosted database and object storage.
-- Preview deployments for pull requests where configured.
-
-### 12.6 V1 architecture principle
-
-Use a modular monolith:
-
-> One deployable Next.js application with clear internal feature boundaries.
-
-Do not create a separate backend service until long-running AI/3D jobs, integrations, or scale requirements justify it.
-
----
-
-## 13. Suggested Source Structure
+### Feature boundaries
 
 ```text
 src/
 ├── app/
-│   ├── page.tsx
-│   ├── design/page.tsx
-│   ├── projects/[id]/page.tsx
-│   ├── share/[token]/page.tsx
-│   └── api/
-│       ├── assets/route.ts
-│       ├── projects/route.ts
-│       ├── projects/[id]/route.ts
-│       ├── projects/[id]/share/route.ts
-│       └── shared/[token]/route.ts
-├── components/
-│   └── ui/
-├── features/
-│   ├── assets/
-│   ├── editor/
-│   ├── projects/
-│   └── sharing/
-├── lib/
-│   ├── supabase/
-│   ├── validation/
-│   └── env/
+├── components/ui/
+├── features/business/
+├── features/catalog/
+├── features/digital-assets/
+├── features/projects/
+├── features/editor/
+├── features/customer-experience/
+├── features/customer-requests/
+├── lib/supabase/
+├── lib/validation/
+├── lib/env/
 ├── stores/
-│   └── editor-store.ts
 └── types/
 ```
 
-The agent may refine file names, but it must preserve feature separation and avoid dumping domain logic into page components.
+Existing `features/assets` code may remain until migrated deliberately. New generic business logic should not be added to a furniture-specific module merely because it already exists.
 
----
+### Frontend/backend boundary
 
-## 14. Data Model
+Frontend owns UI, navigation, forms, local editor interaction, rendering, and loading/error presentation. Backend owns authentication, authorization, persistence, storage, asset-generation orchestration, projects, scenes, placements, customer requests, and business data.
 
-### 14.1 `assets`
+## 11. Security and tenancy
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | UUID | Primary key |
-| `name` | Text | Required |
-| `category` | Text | Required |
-| `sku` | Text | Unique for demo business |
-| `description` | Text | Optional |
-| `price_aed` | Integer | Store minor units if decimals are needed |
-| `thumbnail_url` | Text | Required |
-| `model_url` | Text | Required |
-| `width_m` | Numeric | Positive, authoritative |
-| `height_m` | Numeric | Positive, authoritative |
-| `depth_m` | Numeric | Positive, authoritative |
-| `metadata` | JSONB | Optional controlled metadata |
-| `created_at` | Timestamp | Server generated |
+- A business may access only its own catalogue, assets, projects, and requests.
+- A customer may access only the public visualization authorized by its share link.
+- Audit existing Supabase Row Level Security before changing policies.
+- Never expose service-role or provider credentials to the browser.
+- Treat names, metadata, uploads, and request messages as untrusted input.
+- Validate upload type/size and persisted scene data server-side.
+- Public share identifiers must be non-guessable and revocable where supported.
 
-### 14.2 `projects`
+Authentication and full multi-tenant enforcement must be complete before the product is represented as production-safe for multiple businesses.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | UUID | Primary key |
-| `name` | Text | Required |
-| `customer_name` | Text | Optional |
-| `scene_data` | JSONB | Validated versioned scene |
-| `created_at` | Timestamp | Server generated |
-| `updated_at` | Timestamp | Server updated |
+## 12. Performance and accessibility
 
-### 14.3 `project_shares`
+- Lazy-load 3D assets; never load an entire catalogue of models eagerly.
+- Use thumbnails in browsing surfaces.
+- Compress images and optimize GLB/glTF assets.
+- Use progressive loading and useful status messages.
+- Debounce autosave and avoid server writes during pointer movement.
+- Avoid React state updates on every animation frame.
+- Keep standard controls keyboard-accessible with visible focus.
+- Provide labels for icon-only controls and textual alternatives for the canvas.
+- Colour cannot be the only selection or status indicator.
+- Respect reduced-motion preferences.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `id` | UUID | Primary key |
-| `project_id` | UUID | Foreign key |
-| `token_hash` | Text | Prefer storing a hash rather than plaintext token |
-| `created_at` | Timestamp | Server generated |
-| `expires_at` | Timestamp | Nullable for demo |
+## 13. Design direction
 
-### 14.4 Scene-data contract
+SceneFit should feel premium, minimal, modern, visual, professional, simple, and fast.
 
-```ts
-type SceneDataV1 = {
-  version: 1;
-  roomId: string;
-  placedAssets: Array<{
-    instanceId: string;
-    assetId: string;
-    position: [number, number, number];
-    rotation: [number, number, number];
-  }>;
-  camera?: {
-    position: [number, number, number];
-    target: [number, number, number];
-  };
-};
-```
+Avoid excessive gradients, neon/gamer aesthetics, heavy glassmorphism, huge shadows, tiny controls, technical jargon, clutter, and decorative animation. Business screens are desktop-first; the public customer experience is responsive-first. Do not compress a complex desktop editor into a tiny mobile three-column layout.
 
-The Zod schema is authoritative. Invalid or unsupported scene versions must return a structured error rather than being partially accepted.
+## 14. Required states
 
----
+Every primary surface needs intentional loading, empty, failure, and recovery behaviour.
 
-## 15. API Behaviour
+Examples:
 
-### Success response
+- **Catalog:** “No catalog items yet” with **Add catalog item**.
+- **Projects:** “No visualizations yet” with **Create visualization**.
+- **Requests:** “No customer requests yet.”
+- **Asset generation failed:** **Try again**.
+- **Space processing failed:** **Upload another**.
+- **Save failed:** preserve local work and offer **Try again**.
+- **WebGL unavailable:** keep the surrounding application and textual scene information usable.
 
-```json
-{
-  "data": {}
-}
-```
+Do not expose raw stack traces or provider internals to normal users.
 
-### Error response
+## 15. MVP scope
 
-```json
-{
-  "error": {
-    "code": "validation_failed",
-    "message": "The request could not be processed.",
-    "details": {}
-  }
-}
-```
+The MVP proves this complete loop:
 
-### Required error cases
+1. A business adds a catalogue item and an image.
+2. The item receives an uploaded or externally generated digital asset.
+3. The business creates a visualization and uploads a real customer-space image.
+4. The business places and configures an asset in the editor.
+5. The project is saved and shared.
+6. The customer opens the branded experience, compares the result, and submits a quote/enquiry request.
+7. The business sees and follows up on the request.
 
-- `validation_failed` — malformed input.
-- `asset_not_found` — unknown asset in scene data.
-- `project_not_found` — missing project.
-- `share_not_found` — invalid or expired share token.
-- `unsupported_scene_version` — unknown scene-data version.
-- `storage_unavailable` — required asset could not be loaded.
-- `internal_error` — unexpected server failure without leaking secrets.
+### Explicitly deferred
 
-### Persistence requirements
+- Full CAD, BIM, architectural drawing, or complex floor planning.
+- An in-house AI 3D foundation model.
+- Depth estimation, surface detection, perspective matching, occlusion, and lighting estimation unless separately approved.
+- AR, VR, 360 environments, and video visualization.
+- Complex product configuration, dynamic pricing, packages, and bundles.
+- Checkout, billing, ERP, full CRM, enterprise analytics, and real-time collaboration.
+- Dozens of vertical-specific workflows or separate industry codebases.
 
-- Server validates every referenced asset ID before saving where practical.
-- Numeric values must be finite and within reasonable bounds.
-- Project names have a defined maximum length.
-- API must reject oversized scene payloads.
-- Share tokens must be cryptographically random and non-guessable.
-- Shared-project response must not expose internal token hashes or privileged metadata.
+## 16. Delivery phases
 
----
+Preserve already merged foundations, but align new work to these phases. Each phase ends with testing, browser verification, and a stop/report point.
 
-## 16. Client State
+### Phase 0 — Alignment and repository audit
 
-Minimum editor store responsibilities:
+- Adopt this product language and document legacy mappings.
+- Audit routes, schemas, Supabase, storage, APIs, auth, existing components, and completed editor work.
+- Decide whether open furniture-specific issues should be generalized, deferred, or closed.
+- Do not rewrite working features merely for naming consistency.
 
-- `projectId`.
-- `projectName`.
-- `roomId`.
-- `assets` catalogue.
-- `placedAssets`.
-- `selectedInstanceId`.
-- active interaction mode.
-- dirty/unsaved flag.
-- save status.
-- asset-loading status.
-- editor error state.
+### Phase 1 — Generic platform foundation
 
-Required actions:
+- App shell and vertical-neutral navigation.
+- `/dashboard`.
+- `/catalog`, `/catalog/new`, and `/catalog/[id]`.
+- Generic catalogue-item UI, configurable categories, pricing presentation, and asset states.
+- Reuse the existing seeded catalogue through an adapter if backend persistence is not ready.
+- Stop after the phase and report gaps before starting digital-asset integration.
 
-- `addAsset`.
-- `selectInstance`.
-- `updatePosition`.
-- `updateRotation`.
-- `deleteInstance`.
-- `clearScene`.
-- `hydrateScene`.
-- `markSaved`.
+### Phase 2 — Digital assets
 
-Undo/redo may be included only after core persistence works and must not block MVP completion.
+- Provider-neutral generation/upload contract.
+- Processing, review, ready, and failure states.
+- 3D preview and optimized GLB/glTF loading.
 
----
+### Phase 3 — Visualization projects
 
-## 17. Loading, Empty, and Error States
+- `/projects` and `/projects/new`.
+- Project, customer, space image, metadata, and editor entry flow.
 
-The implementation must include intentional states for:
+### Phase 4 — Visualization editor
 
-- Application shell loading.
-- Catalogue loading.
-- Room-model loading.
-- Product-model loading.
-- Empty scene.
-- Model load failure.
-- Catalogue load failure with retry.
-- Save in progress.
-- Save success.
-- Save failure with retry and preserved client state.
-- Project not found.
-- Share link not found or expired.
-- Unsupported browser/WebGL condition.
+- `/projects/[projectId]/editor`.
+- Real environment, catalogue, scene placements, transforms, duplicate/delete, properties, save, and controlled autosave.
+- Generalize the existing `/design` editor foundation without discarding tested store and serialization work.
 
-No main user action should fail silently.
+### Phase 5 — Customer experience
 
----
+- `/design/[projectId]`.
+- Business branding, approved catalogue, visualization, selected items, and compare interaction.
 
-## 18. Accessibility and Interaction
+### Phase 6 — Customer requests
 
-- Standard UI controls must be keyboard accessible.
-- Buttons require accessible labels.
-- Icon-only actions require tooltips and screen-reader labels.
-- Visible focus states are required.
-- Colour must not be the only selection indicator.
-- Dialogs and drawers should use accessible shadcn/ui primitives.
-- The 3D canvas should have an accessible textual description and clear instructions.
-- Destructive actions such as reset require confirmation.
+- `/leads` and `/leads/[id]`.
+- Quote/enquiry submission, request status, selected items, visualization context, and follow-up.
 
-Full keyboard manipulation of 3D objects is desirable but not required for initial V1 acceptance.
+## 17. Testing and verification
 
----
-
-## 19. Security and Privacy
-
-- Never commit API keys or Supabase secrets.
-- Validate environment variables at startup.
-- Never send service-role credentials to the browser.
-- Restrict database and storage permissions to the minimum required.
-- Treat project and customer names as untrusted input.
-- Do not render raw user HTML.
-- Use non-guessable sharing tokens.
-- Apply reasonable API payload and rate limits before a public launch.
-- Avoid collecting unnecessary personal data.
-- V1 does not require customer accounts.
-
-Because authentication is excluded, editable project URLs are demonstration-grade and not appropriate for sensitive customer designs. Authentication/ownership must be added before production multi-customer use.
-
----
-
-## 20. Testing Strategy
-
-### Unit tests
-
-- Zod scene validation.
-- Asset-dimension validation.
-- Editor-store actions.
-- Scene serialization and hydration.
-- Share-token helpers.
-
-### Component tests
-
-- Catalogue rendering.
-- Category filtering.
-- Add-to-room action.
-- Selected-object controls.
-- Save dialog validation.
-- Loading and error states.
-
-### API tests
-
-- Create project success/failure.
-- Load project.
-- Update project.
-- Invalid scene rejection.
-- Unknown asset rejection.
-- Share creation.
-- Invalid share token.
-- Read-only response contract.
-
-### End-to-end tests
-
-At minimum:
-
-1. Open editor and observe room/catalogue.
-2. Add one product.
-3. Save project.
-4. Reopen project and verify product instance exists.
-5. Generate share link.
-6. Open shared project and verify editing actions are unavailable.
-
-Precise pointer-based 3D transformation may require targeted integration tests and manual visual verification.
-
-### Visual/manual verification
-
-Every 3D or layout PR must include:
-
-- Screenshot or short recording.
-- Browser-console check.
-- Confirmation that models sit on the floor and retain correct scale.
-- Confirmation of camera and transform behaviour.
-- Confirmation of no obvious mobile-layout regression.
-
----
-
-## 21. Required Project Checks
-
-The repository must provide scripts equivalent to:
+Required checks:
 
 ```bash
 pnpm lint
@@ -686,197 +436,35 @@ pnpm test
 pnpm build
 ```
 
-CI must run required checks on pull requests. A PR with failing required checks must not be merged.
+- Add unit tests for contracts, schemas, adapters, stores, serialization, and pure editor helpers.
+- Add component tests for visible business/customer behaviour and all critical states.
+- Add API tests for validation, authorization, ownership, and structured errors.
+- Add end-to-end coverage for the catalogue → project → editor → share → request loop as those phases land.
+- UI and 3D changes require real-browser verification at relevant desktop/mobile sizes and browser-console inspection.
+- Never claim visual or interactive verification when it could not be completed.
 
----
+## 18. Definition of done
 
-## 22. Jared Development Workflow
+A phase or issue is complete only when:
 
-1. One GitHub issue represents one coherent deliverable.
-2. Every issue includes context, requirements, acceptance criteria, tests, and exclusions.
-3. Jared creates a dedicated feature/fix branch.
-4. Jared writes an implementation plan before material changes.
-5. Jared implements only the assigned issue.
-6. Jared runs relevant checks.
-7. Jared removes unrelated or low-quality AI-generated changes.
-8. Jared opens a draft PR with the plan and verification results.
-9. CI failures are addressed with the smallest relevant fix.
-10. Review comments are handled in the same PR/session.
-11. The technical founder gives final approval and merge authority remains human-controlled.
+- Acceptance criteria are satisfied without unrelated scope.
+- Domain language follows this specification or an explicit compatibility mapping is documented.
+- Loading, empty, failure, and recovery states exist where relevant.
+- Runtime inputs are validated and tenant/security boundaries are preserved.
+- Relevant automated tests pass.
+- Lint, typecheck, test, and build pass.
+- UI/3D behaviour is verified in a real browser.
+- Documentation and public contracts are updated when behaviour changes.
+- The PR reports exact files, checks, screenshots, limitations, and deferred work.
 
-### Agent constraints
+## 19. Decision hierarchy
 
-Jared must not:
+When instructions conflict:
 
-- Push directly to `main`.
-- Merge its own PR.
-- Implement excluded features.
-- Add dependencies without explaining their necessity.
-- Change architecture silently.
-- Disable tests, lint rules, or type safety to obtain a passing build.
-- Modify unrelated files.
-- commit secrets, generated credentials, or production data.
+1. Latest explicit human-maintainer instruction.
+2. An approved issue that intentionally changes product scope.
+3. This specification.
+4. `AGENTS.md`.
+5. Existing conventions and implementation.
 
----
-
-## 23. Proposed Implementation Phases
-
-Each phase should be split into reviewable GitHub issues.
-
-### Phase 0 — Inputs and decisions
-
-- Confirm temporary/release product name.
-- Select demo brand identity.
-- Obtain one room GLB.
-- Obtain ten product GLBs, thumbnails, dimensions, SKUs, and prices.
-- Verify rights to use demo assets.
-- Define reference desktop and mobile devices.
-
-### Phase 1 — Repository foundation
-
-- Next.js + TypeScript + pnpm.
-- Strict TypeScript.
-- Tailwind CSS.
-- shadcn/ui.
-- Lucide React.
-- Lint, typecheck, tests, build, CI.
-- Environment validation.
-
-### Phase 2 — Design system and shell
-
-- Brand tokens.
-- Header/navigation.
-- Responsive editor shell.
-- Loading/error primitives.
-- Landing page.
-
-### Phase 3 — Domain contracts and seed catalogue
-
-- Asset schema/types.
-- Scene schema/types.
-- Seed ten products.
-- Catalogue UI and filtering.
-
-### Phase 4 — Static 3D room
-
-- React Three Fiber canvas.
-- Camera controls.
-- Room model.
-- Lighting and shadows.
-- Progress and WebGL fallback.
-
-### Phase 5 — Product placement
-
-- Load GLB products.
-- Add product instance.
-- Selection.
-- Floor-plane movement.
-- Vertical-axis rotation.
-- Delete instance.
-- Reset scene.
-
-### Phase 6 — Editor state and serialization
-
-- Zustand store.
-- Dirty state.
-- Scene serialization.
-- Scene hydration.
-- Store unit tests.
-
-### Phase 7 — Supabase persistence
-
-- Database migrations.
-- Storage configuration.
-- Seed data.
-- Project create/read/update routes.
-- Save/reopen UI.
-- API tests.
-
-### Phase 8 — Sharing
-
-- Secure token generation/storage.
-- Share route.
-- Read-only page.
-- Share-link UI.
-- End-to-end coverage.
-
-### Phase 9 — Polish and validation
-
-- Asset optimization.
-- Performance review.
-- Responsive review.
-- Error-state review.
-- Accessibility review.
-- Business-demo script.
-- Feedback sessions.
-
----
-
-## 24. Definition of Done
-
-An issue is done only when:
-
-- Acceptance criteria are satisfied.
-- Relevant tests are added or updated.
-- Required checks pass.
-- No unrelated changes are included.
-- Error and loading states are handled.
-- User-visible changes are visually verified.
-- Documentation/contracts are updated when behaviour changes.
-- The PR describes what changed, how it was tested, and any limitations.
-
-The MVP is done only when:
-
-- All primary flows work in the deployed environment.
-- Ten demo products display at correct scale.
-- Save/reopen preserves the scene.
-- Sharing is read-only.
-- Required checks pass.
-- The demo has been visually verified on reference devices.
-- Known limitations are documented.
-- A repeatable demonstration script exists.
-
----
-
-## 25. Open Decisions
-
-These decisions must be resolved before their dependent issues begin:
-
-1. Demo business identity and brand tokens.
-2. Exact ten products and their legally usable assets.
-3. Exact room GLB and licensing.
-4. Reference devices/browser versions.
-5. Whether V1 project links are intentionally public/unlisted or protected by a simple demo access gate.
-6. Whether share links expire.
-7. Whether prices are stored as whole AED values or minor units.
-8. Whether camera position is persisted.
-9. Whether undo/redo is included before pilot demonstrations.
-
-Open decisions are not permission to expand scope. When an issue depends on one, the decision should be documented before implementation.
-
----
-
-## 26. Future Architecture Direction
-
-After V1 validation, possible additions include:
-
-- Multi-tenant business accounts and branded portals.
-- Catalogue-management dashboard.
-- Customer authentication and project ownership.
-- Quotation and lead workflows.
-- WhatsApp sharing/integration.
-- Product-photo-to-3D processing.
-- Customer room upload and reconstruction.
-- AR visualization.
-- AI catalogue-constrained design assistant.
-- Dedicated Node.js API.
-- Queue and worker services for long-running jobs.
-- Event, real-estate, interior-design, and hospitality configurations.
-
-None of these future directions belong in V1 unless this specification is intentionally revised and approved.
-
----
-
-## 27. One-Sentence Product Definition
-
-> A branded browser-based furniture visualizer where customers place a business's real products inside a predefined 3D room, save the arrangement, and share a read-only design.
+Do not use an ambiguous issue as permission to invent product behaviour or duplicate backend structures.
