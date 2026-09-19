@@ -1,6 +1,7 @@
 import React from 'react';
-import { PortalPlaceholder } from '@/features/business/portal-placeholder';
+import { adaptSeededFurnitureCatalogue } from '@/features/catalog/legacy-furniture-adapter';
+import { ProductLibrary } from '@/features/catalog/product-library';
 
 export default function CatalogPage() {
-  return <PortalPlaceholder title="Product Library" description="Your catalog items will appear here. Add and manage products in the next step." />;
+  return <ProductLibrary catalog={adaptSeededFurnitureCatalogue()} />;
 }
