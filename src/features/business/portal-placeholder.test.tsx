@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { PortalPlaceholder } from './portal-placeholder';
-import CatalogPage from '@/app/(portal)/catalog/page';
 import ProjectsPage from '@/app/(portal)/projects/page';
 import RequestsPage from '@/app/(portal)/requests/page';
 import SettingsPage from '@/app/(portal)/settings/page';
 import NewCatalogItemPage from '@/app/(portal)/catalog/new/page';
+import CatalogItemPlaceholderPage from '@/app/(portal)/catalog/[id]/page';
 import NewVisualizationPage from '@/app/(portal)/projects/new/page';
 
 describe('portal empty state', () => {
@@ -22,7 +22,6 @@ describe('portal empty state', () => {
 });
 
 it.each([
-  ['Product Library', CatalogPage],
   ['Visualizations', ProjectsPage],
   ['Customer Requests', RequestsPage],
   ['Settings', SettingsPage],
@@ -39,4 +38,11 @@ it.each([
   const markup = renderToStaticMarkup(<Page />);
   expect(markup).toContain(`${title}</h1>`);
   expect(markup).toContain(description);
+});
+
+it('renders the labelled product-details placeholder for card edit destinations', () => {
+  const markup = renderToStaticMarkup(<CatalogItemPlaceholderPage />);
+
+  expect(markup).toContain('Product details</h1>');
+  expect(markup).toContain('Product editing will be available here in a future update.');
 });
