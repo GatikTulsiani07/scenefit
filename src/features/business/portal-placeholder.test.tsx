@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { PortalPlaceholder } from './portal-placeholder';
-import DashboardPage from '@/app/(portal)/dashboard/page';
 import CatalogPage from '@/app/(portal)/catalog/page';
 import ProjectsPage from '@/app/(portal)/projects/page';
 import RequestsPage from '@/app/(portal)/requests/page';
 import SettingsPage from '@/app/(portal)/settings/page';
+import NewCatalogItemPage from '@/app/(portal)/catalog/new/page';
+import NewVisualizationPage from '@/app/(portal)/projects/new/page';
 
 describe('portal empty state', () => {
   it('renders a labelled page and intentional empty message', () => {
@@ -21,7 +22,6 @@ describe('portal empty state', () => {
 });
 
 it.each([
-  ['Dashboard', DashboardPage],
   ['Product Library', CatalogPage],
   ['Visualizations', ProjectsPage],
   ['Customer Requests', RequestsPage],
@@ -30,4 +30,13 @@ it.each([
   const markup = renderToStaticMarkup(<Page />);
   expect(markup).toContain(`${title}</h1>`);
   expect(markup).toContain('Nothing here yet');
+});
+
+it.each([
+  ['Add product', 'Product creation will be available here in a future update.', NewCatalogItemPage],
+  ['Create visualization', 'Visualization creation will be available here in a future update.', NewVisualizationPage],
+])('renders the labelled %s creation placeholder', (title, description, Page) => {
+  const markup = renderToStaticMarkup(<Page />);
+  expect(markup).toContain(`${title}</h1>`);
+  expect(markup).toContain(description);
 });
