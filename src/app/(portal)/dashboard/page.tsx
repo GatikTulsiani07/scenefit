@@ -1,6 +1,7 @@
 import React from 'react';
-import { PortalPlaceholder } from '@/features/business/portal-placeholder';
+import { BusinessDashboard } from '@/features/business/dashboard';
+import { populatedDashboardViewModel } from '@/features/business/dashboard-view-model';
 
 export default function DashboardPage() {
-  return <PortalPlaceholder title="Dashboard" description="Your business overview will appear here as your workspace takes shape." />;
+  return <BusinessDashboard viewModel={populatedDashboardViewModel} />;
 }
