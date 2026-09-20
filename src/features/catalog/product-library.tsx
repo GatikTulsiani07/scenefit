@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PackagePlus, Search } from 'lucide-react';
 
 import type { Catalog, CatalogItem, DigitalAssetStatus, PublicationStatus } from './contracts';
+import { DigitalAssetStatusPresentation } from '@/features/digital-assets/digital-asset-status';
 import {
   ALL_FILTER_VALUE,
   defaultProductLibraryFilters,
@@ -13,7 +14,6 @@ import {
   formatDigitalAssetStatus,
   formatPublicationStatus,
   getCatalogCategories,
-  getCatalogItemDigitalAssetStatus,
   type ProductLibraryFilters,
 } from './product-library-data';
 
@@ -48,16 +48,11 @@ function CatalogItemPlaceholder({ item }: { item: CatalogItem }) {
   );
 }
 
-function StatusBadge({ label, tone }: { label: string; tone: 'publication' | 'asset' }) {
-  const toneClasses = tone === 'publication'
-    ? 'border-slate-300 bg-slate-100 text-slate-700'
-    : 'border-cyan-200 bg-cyan-50 text-cyan-900';
-
-  return <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${toneClasses}`}>{label}</span>;
+function StatusBadge({ label }: { label: string }) {
+  return <span className="rounded-full border border-slate-300 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{label}</span>;
 }
 
 function ProductCard({ item }: { item: CatalogItem }) {
-  const digitalAssetStatus = getCatalogItemDigitalAssetStatus(item);
   const previewDescriptionId = `preview-unavailable-${item.id}`;
 
   return (
@@ -65,9 +60,9 @@ function ProductCard({ item }: { item: CatalogItem }) {
       <CatalogItemPlaceholder item={item} />
       <div className="mt-4 flex flex-1 flex-col">
         <div className="flex flex-wrap gap-2">
-          <StatusBadge label={formatPublicationStatus(item.publicationStatus)} tone="publication" />
-          <StatusBadge label={formatDigitalAssetStatus(digitalAssetStatus)} tone="asset" />
+          <StatusBadge label={formatPublicationStatus(item.publicationStatus)} />
         </div>
+        <DigitalAssetStatusPresentation input={item.digitalAsset} compact />
         <h2 className="mt-3 text-lg font-semibold tracking-tight text-slate-950">{item.name}</h2>
         <p className="mt-1 text-sm text-slate-600">{item.category}</p>
         {item.sku ? <p className="mt-2 text-xs text-slate-500">SKU: {item.sku}</p> : null}
