@@ -31,6 +31,8 @@ describe('CatalogItemForm', () => {
     expect(markup).toContain(`value="${item.name}"`);
     expect(markup).toContain(`value="${item.sku}"`);
     expect(markup).toContain('no asset');
+    expect(markup).toContain('No verified digital asset is associated');
+    expect(markup).toContain('Upload image unavailable');
     expect(markup).toContain('Prepare changes');
   });
 

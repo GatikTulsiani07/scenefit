@@ -28,7 +28,7 @@ describe('ProductLibrary', () => {
     }
 
     expect((markup.match(/Published/g) ?? []).length).toBeGreaterThanOrEqual(catalog.items.length);
-    expect((markup.match(/No Asset/g) ?? []).length).toBeGreaterThanOrEqual(catalog.items.length);
+    expect((markup.match(/No asset/g) ?? []).length).toBeGreaterThanOrEqual(catalog.items.length);
     expect((markup.match(/Preview unavailable/g) ?? []).length).toBeGreaterThanOrEqual(catalog.items.length);
     expect(markup).toContain('disabled=""');
   });
