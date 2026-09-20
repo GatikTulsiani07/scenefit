@@ -1,7 +1,8 @@
 import React from 'react';
 
-import { PortalPlaceholder } from '@/features/business/portal-placeholder';
+import { CatalogItemForm } from '@/features/catalog/catalog-item-form';
+import { SEEDED_FURNITURE_CATALOG_ID } from '@/features/catalog/legacy-furniture-adapter';
 
 export default function NewCatalogItemPage() {
-  return <PortalPlaceholder title="Add product" description="Product creation will be available here in a future update." />;
+  return <CatalogItemForm mode="new" catalogId={SEEDED_FURNITURE_CATALOG_ID} />;
 }

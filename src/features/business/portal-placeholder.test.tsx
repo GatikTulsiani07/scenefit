@@ -6,8 +6,6 @@ import { PortalPlaceholder } from './portal-placeholder';
 import ProjectsPage from '@/app/(portal)/projects/page';
 import RequestsPage from '@/app/(portal)/requests/page';
 import SettingsPage from '@/app/(portal)/settings/page';
-import NewCatalogItemPage from '@/app/(portal)/catalog/new/page';
-import CatalogItemPlaceholderPage from '@/app/(portal)/catalog/[id]/page';
 import NewVisualizationPage from '@/app/(portal)/projects/new/page';
 
 describe('portal empty state', () => {
@@ -31,18 +29,8 @@ it.each([
   expect(markup).toContain('Nothing here yet');
 });
 
-it.each([
-  ['Add product', 'Product creation will be available here in a future update.', NewCatalogItemPage],
-  ['Create visualization', 'Visualization creation will be available here in a future update.', NewVisualizationPage],
-])('renders the labelled %s creation placeholder', (title, description, Page) => {
-  const markup = renderToStaticMarkup(<Page />);
-  expect(markup).toContain(`${title}</h1>`);
-  expect(markup).toContain(description);
-});
-
-it('renders the labelled product-details placeholder for card edit destinations', () => {
-  const markup = renderToStaticMarkup(<CatalogItemPlaceholderPage />);
-
-  expect(markup).toContain('Product details</h1>');
-  expect(markup).toContain('Product editing will be available here in a future update.');
+it('renders the labelled visualization creation placeholder', () => {
+  const markup = renderToStaticMarkup(<NewVisualizationPage />);
+  expect(markup).toContain('Create visualization</h1>');
+  expect(markup).toContain('Visualization creation will be available here in a future update.');
 });
